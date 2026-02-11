@@ -1,0 +1,791 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Display configuration for dashboard cards - defines which fields to show for each capability and message type",
+    "notes": [
+      "capability: The data type (position, velocity, heading, etc.)",
+      "sources: Message types that provide this capability",
+      "field_mapping: Maps standard field names to message-specific field names",
+      "extra_fields: Additional fields to display in the card",
+      "format: How to format the value (float, int, degrees, meters, status, time)"
+    ]
+  },
+
+  "capabilities": {
+    // ============================================================
+    // POSITION CAPABILITY
+    // ============================================================
+    "position": {
+      // Standard fields that every position source should provide
+      "standard_fields": [
+        {"name": "latitude", "label": "Latitude", "unit": "°", "format": "coord", "decimals": 8},
+        {"name": "longitude", "label": "Longitude", "unit": "°", "format": "coord", "decimals": 8},
+        {"name": "height", "label": "Height", "unit": "m", "format": "float", "decimals": 2},
+        {"name": "h_accuracy", "label": "H. Accuracy", "unit": "m", "format": "sigma", "decimals": 3},
+        {"name": "v_accuracy", "label": "V. Accuracy", "unit": "m", "format": "sigma", "decimals": 3}
+      ],
+
+      // Message sources for this capability
+      "sources": {
+        // ============================================================
+        // 1. NMEA MESSAGES (Highest Priority)
+        // ============================================================
+        "GGA": {
+          "id": "GGA",
+          "type": "nmea",
+          "description": "GPS Fix Data",
+          "field_mapping": {
+            "latitude": "lat_dm",
+            "longitude": "lon_dm",
+            "height": "alt_m",
+            "ns": "ns",
+            "ew": "ew"
+          },
+          "extra_fields": [
+            {"field": "sol_status", "label": "Solution", "format": "int"},
+            {"field": "num_sats", "label": "Satellites", "format": "int"},
+            {"field": "hdop", "label": "HDOP", "format": "float", "decimals": 1}
+          ]
+        },
+
+        // ============================================================
+        // 2. ASCII MESSAGES (Special)
+        // ============================================================
+        "BESTPOSA": {
+          "tag": "BESTPOSA",
+          "type": "ascii",
+          "description": "Best Position (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str"},
+            {"field": "position_type", "label": "Pos Type", "format": "str"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"},
+            {"field": "diff_age_s", "label": "Diff Age", "format": "float", "unit": "s", "decimals": 1}
+          ]
+        },
+        "BESTGNSSPOSA": {
+          "tag": "BESTGNSSPOSA",
+          "type": "ascii",
+          "description": "Best GNSS Position (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str"},
+            {"field": "position_type", "label": "Pos Type", "format": "str"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+          ]
+        },
+        "BESTPVTA": {
+          "tag": "BESTPVTA",
+          "type": "ascii",
+          "description": "Best PVT (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str"},
+            {"field": "position_type", "label": "Pos Type", "format": "str"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+          ]
+        },
+        "INSPOSA": {
+          "tag": "INSPOSA",
+          "type": "ascii",
+          "description": "INS Position (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "INS Status", "format": "str"}
+          ]
+        },
+        "INSPVAA": {
+          "tag": "INSPVAA",
+          "type": "ascii",
+          "description": "INS PVA (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "INS Status", "format": "str"},
+            {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+          ]
+        },
+        "INSPVAXA": {
+          "tag": "INSPVAXA",
+          "type": "ascii",
+          "description": "INS PVA Extended (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "lat_sigma",
+            "lon_sigma": "lon_sigma",
+            "hgt_sigma": "height_sigma"
+          },
+          "extra_fields": [
+            {"field": "ins_status", "label": "INS Status", "format": "str"},
+            {"field": "position_type", "label": "Pos Type", "format": "str"},
+            {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+          ]
+        },
+
+        // ============================================================
+        // 3. BINARY MESSAGES
+        // ============================================================
+        "BESTPOSB": {
+          "id": 42,
+          "type": "binary",
+          "description": "Best Position (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str", "ref_table": "table_4_1_solution_status"},
+            {"field": "position_type", "label": "Pos Type", "format": "str", "ref_table": "table_4_2_position_status"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"},
+            {"field": "diff_age_s", "label": "Diff Age", "format": "float", "unit": "s", "decimals": 1}
+          ]
+        },
+        "BESTGNSSPOSB": {
+          "id": 1429,
+          "type": "binary",
+          "description": "Best GNSS Position (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str", "ref_table": "table_4_1_solution_status"},
+            {"field": "position_type", "label": "Pos Type", "format": "str", "ref_table": "table_4_2_position_status"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+          ]
+        },
+        "BESTPVTB": {
+          "id": 10000,
+          "type": "binary",
+          "description": "Best PVT (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_sigma_m",
+            "lon_sigma": "longitude_sigma_m",
+            "hgt_sigma": "height_sigma_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str", "ref_table": "table_4_1_solution_status"},
+            {"field": "position_type", "label": "Pos Type", "format": "str", "ref_table": "table_4_2_position_status"},
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+          ]
+        },
+        "INSPOSB": {
+          "id": 265,
+          "type": "binary",
+          "description": "INS Position (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "INS Status", "format": "int"}
+          ]
+        },
+        "INSPVAB": {
+          "id": 507,
+          "type": "binary",
+          "description": "INS PVA (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "INS Status", "format": "int"},
+            {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+          ]
+        },
+        "INSPVAXB": {
+          "id": 1465,
+          "type": "binary",
+          "description": "INS PVA Extended (Binary)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m",
+            "lat_sigma": "latitude_stdev_m",
+            "lon_sigma": "longitude_stdev_m",
+            "hgt_sigma": "height_stdev_m"
+          },
+          "extra_fields": [
+            {"field": "ins_status", "label": "INS Status", "format": "int"},
+            {"field": "position_type", "label": "Pos Type", "format": "int"},
+            {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+          ]
+        }
+      }
+    },
+
+    // ============================================================
+    // VELOCITY CAPABILITY
+    // ============================================================
+    "velocity": {
+      "standard_fields": [
+        {"name": "horizontal_speed", "label": "H. Speed", "unit": "m/s", "format": "float", "decimals": 2},
+        {"name": "vertical_speed", "label": "V. Speed", "unit": "m/s", "format": "float", "decimals": 2},
+        {"name": "track", "label": "Track", "unit": "°", "format": "float", "decimals": 1},
+        {"name": "north_velocity", "label": "North Vel", "unit": "m/s", "format": "float", "decimals": 2},
+        {"name": "east_velocity", "label": "East Vel", "unit": "m/s", "format": "float", "decimals": 2}
+      ],
+
+      "sources": {
+        "BESTGNSSVELB": {
+          "id": 1430,
+          "type": "binary",
+          "description": "Best GNSS Velocity",
+          "field_mapping": {
+            "horizontal_speed": "horizontal_speed_ms",
+            "vertical_speed": "vertical_speed_ms",
+            "track": "track_ground_deg"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "int"},
+            {"field": "latency_s", "label": "Latency", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "PSRVELB": {
+          "id": 100,
+          "type": "binary",
+          "description": "Pseudorange Velocity",
+          "field_mapping": {
+            "horizontal_speed": "horizontal_speed_ms",
+            "vertical_speed": "vertical_speed_ms",
+            "track": "track_over_ground_deg"
+          },
+          "extra_fields": [
+            {"field": "sol_status", "label": "Solution", "format": "int"},
+            {"field": "latency_s", "label": "Latency", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSVELB": {
+          "id": 267,
+          "type": "binary",
+          "description": "INS Velocity",
+          "field_mapping": {
+            "north_velocity": "north_velocity_ms",
+            "east_velocity": "east_velocity_ms",
+            "vertical_speed": "up_velocity_ms"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "Status", "format": "int"}
+          ]
+        },
+
+        "INSSPDB": {
+          "id": 266,
+          "type": "binary",
+          "description": "INS Speed",
+          "field_mapping": {
+            "horizontal_speed": "horizontal_speed_ms",
+            "vertical_speed": "vertical_speed_ms",
+            "track": "track_deg"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "Status", "format": "int"}
+          ]
+        },
+
+        "VTG": {
+          "id": "VTG",
+          "type": "nmea",
+          "description": "Track and Ground Speed",
+          "field_mapping": {
+            "track": "track_true_deg",
+            "horizontal_speed": "sog_kmh"
+          },
+          "extra_fields": [
+            {"field": "sog_knots", "label": "Speed (kn)", "format": "float", "unit": "kn", "decimals": 1},
+            {"field": "mode_ind", "label": "Mode", "format": "str"}
+          ],
+          "conversions": {
+            "horizontal_speed": {"from": "km/h", "to": "m/s", "factor": 0.277778}
+          }
+        }
+      }
+    },
+
+    // ============================================================
+    // HEADING CAPABILITY
+    // ============================================================
+    "heading": {
+      "standard_fields": [
+        {"name": "heading", "label": "Heading", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "pitch", "label": "Pitch", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "roll", "label": "Roll", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "baseline", "label": "Baseline", "unit": "m", "format": "float", "decimals": 3}
+      ],
+
+      "sources": {
+        "HEADINGB": {
+          "id": 971,
+          "type": "binary",
+          "description": "Heading",
+          "field_mapping": {
+            "heading": "heading_deg",
+            "pitch": "pitch_deg",
+            "baseline": "baseline_length_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "int"},
+            {"field": "position_type", "label": "Type", "format": "int"},
+            {"field": "heading_std_deg", "label": "Heading σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "pitch_std_deg", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 3}
+          ]
+        },
+
+        "HEADING2B": {
+          "id": 1335,
+          "type": "binary",
+          "description": "Heading 2",
+          "field_mapping": {
+            "heading": "heading_deg",
+            "pitch": "pitch_deg",
+            "baseline": "baseline_length_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "int"},
+            {"field": "heading_std_deg", "label": "Heading σ", "format": "float", "unit": "°", "decimals": 3}
+          ]
+        },
+
+        "INSATTB": {
+          "id": 263,
+          "type": "binary",
+          "description": "INS Attitude",
+          "field_mapping": {
+            "heading": "azimuth_deg",
+            "pitch": "pitch_deg",
+            "roll": "roll_deg"
+          },
+          "extra_fields": [
+            {"field": "status", "label": "Status", "format": "int"}
+          ]
+        },
+
+        "HDT": {
+          "id": "HDT",
+          "type": "nmea",
+          "description": "Heading True",
+          "field_mapping": {
+            "heading": "heading_deg"
+          },
+          "extra_fields": []
+        },
+
+        "TRA": {
+          "id": "TRA",
+          "type": "nmea",
+          "description": "Yaw, Pitch and Roll",
+          "field_mapping": {
+            "heading": "yaw_deg",
+            "pitch": "pitch_deg",
+            "roll": "roll_deg"
+          },
+          "extra_fields": [
+            {"field": "sol_status", "label": "Solution", "format": "int"},
+            {"field": "num_sats", "label": "Satellites", "format": "int"}
+          ]
+        },
+
+        "PASHR": {
+          "id": "PASHR",
+          "type": "nmea",
+          "description": "Proprietary Attitude",
+          "field_mapping": {
+            "heading": "yaw_deg",
+            "pitch": "pitch_deg",
+            "roll": "roll_deg"
+          },
+          "extra_fields": [
+            {"field": "sol_status", "label": "Solution", "format": "int"},
+            {"field": "heave_m", "label": "Heave", "format": "float", "unit": "m", "decimals": 2}
+          ]
+        },
+
+        "ORI": {
+          "id": "ORI",
+          "type": "nmea",
+          "description": "Orientation",
+          "field_mapping": {
+            "heading": "azimuth_deg",
+            "pitch": "pitch_deg",
+            "baseline": "baseline_len_m"
+          },
+          "extra_fields": [
+            {"field": "sol_status", "label": "Solution", "format": "int"}
+          ]
+        }
+      }
+    },
+
+    // ============================================================
+    // SATELLITES CAPABILITY
+    // ============================================================
+    "satellites": {
+      "standard_fields": [
+        {"name": "num_sats", "label": "Satellites", "unit": "", "format": "int"},
+        {"name": "pdop", "label": "PDOP", "unit": "", "format": "float", "decimals": 1},
+        {"name": "hdop", "label": "HDOP", "unit": "", "format": "float", "decimals": 1},
+        {"name": "vdop", "label": "VDOP", "unit": "", "format": "float", "decimals": 1}
+      ],
+
+      "sources": {
+        "GSA": {
+          "id": "GSA",
+          "type": "nmea",
+          "description": "DOP and Active Satellites",
+          "field_mapping": {
+            "pdop": "pdop",
+            "hdop": "hdop",
+            "vdop": "vdop"
+          },
+          "extra_fields": [
+            {"field": "mode", "label": "Fix Type", "format": "int"}
+          ]
+        },
+
+        "GSV": {
+          "id": "GSV",
+          "type": "nmea",
+          "description": "Satellites in View",
+          "field_mapping": {
+            "num_sats": "num_sats"
+          },
+          "extra_fields": [
+            {"field": "num_msgs", "label": "Messages", "format": "int"}
+          ]
+        }
+      }
+    },
+
+    // ============================================================
+    // IMU CAPABILITY
+    // ============================================================
+    "imu": {
+      "standard_fields": [
+        {"name": "accel_x", "label": "Accel X", "unit": "m/s²", "format": "float", "decimals": 4},
+        {"name": "accel_y", "label": "Accel Y", "unit": "m/s²", "format": "float", "decimals": 4},
+        {"name": "accel_z", "label": "Accel Z", "unit": "m/s²", "format": "float", "decimals": 4},
+        {"name": "gyro_x", "label": "Gyro X", "unit": "°/s", "format": "float", "decimals": 4},
+        {"name": "gyro_y", "label": "Gyro Y", "unit": "°/s", "format": "float", "decimals": 4},
+        {"name": "gyro_z", "label": "Gyro Z", "unit": "°/s", "format": "float", "decimals": 4},
+        {"name": "roll", "label": "Roll", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "pitch", "label": "Pitch", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "yaw", "label": "Yaw", "unit": "°", "format": "float", "decimals": 2},
+        {"name": "ins_status", "label": "INS Status", "unit": "", "format": "str"}
+      ],
+
+      "sources": {
+        "CORRIMUDATAB": {
+          "id": 812,
+          "type": "binary",
+          "description": "Corrected IMU Data - Incremental values per sample",
+          "field_mapping": {
+            "accel_x": "lateral_acc",        // X-axis (right)
+            "accel_y": "longitudinal_acc",   // Y-axis (forward)
+            "accel_z": "vertical_acc",       // Z-axis (up)
+            "gyro_x": "roll_rate_rad",       // about Y-axis → X rotation
+            "gyro_y": "pitch_rate_rad",      // about X-axis → Y rotation
+            "gyro_z": "yaw_rate_rad"         // about Z-axis (same)
+          },
+          "extra_fields": [],
+          "conversions": {
+            "gyro_x": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_y": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_z": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58}
+          }
+        },
+
+        "CORRIMUDATASB": {
+          "id": 813,
+          "type": "binary",
+          "description": "Corrected IMU Data Short - Incremental values per sample",
+          "field_mapping": {
+            "accel_x": "lateral_acc",        // X-axis (right)
+            "accel_y": "longitudinal_acc",   // Y-axis (forward)
+            "accel_z": "vertical_acc",       // Z-axis (up)
+            "gyro_x": "roll_rate_rad",       // about Y-axis → X rotation
+            "gyro_y": "pitch_rate_rad",      // about X-axis → Y rotation
+            "gyro_z": "yaw_rate_rad"         // about Z-axis (same)
+          },
+          "extra_fields": [],
+          "conversions": {
+            "gyro_x": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_y": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_z": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58}
+          }
+        },
+
+        "RAWIMUB": {
+          "id": 268,
+          "type": "binary",
+          "description": "Raw IMU Data",
+          // Sensor frame: +X forward, +Y right, +Z up
+          // Display frame: X=lateral(right), Y=longitudinal(forward), Z=vertical(up)
+          // nyA/nyG = NEGATIVE Y-axis → negate to get +Y (right)
+          "field_mapping": {
+            "accel_x": "nyA",            // Display X (right)  ← sensor -Y → negate via conversion
+            "accel_y": "xA",             // Display Y (forward) ← sensor X
+            "accel_z": "zA",             // Display Z (up)      ← sensor Z
+            "gyro_x": "nyG",             // Display X (right)  ← sensor -Y → negate via conversion
+            "gyro_y": "xG",              // Display Y (forward) ← sensor X
+            "gyro_z": "zG"               // Display Z (up)      ← sensor Z
+          },
+          "conversions": {
+            // LSB → m/s² (Table 4-16: 7.48188018798828e-06), negate ny* fields
+            "accel_x": {"from": "LSB", "to": "m/s²", "factor": -7.48188018798828e-06},
+            "accel_y": {"from": "LSB", "to": "m/s²", "factor": 7.48188018798828e-06},
+            "accel_z": {"from": "LSB", "to": "m/s²", "factor": 7.48188018798828e-06},
+            // LSB → deg/s (Table 4-16: 1.52587890625e-05), negate ny* fields
+            "gyro_x": {"from": "LSB", "to": "deg/s", "factor": -1.52587890625e-05},
+            "gyro_y": {"from": "LSB", "to": "deg/s", "factor": 1.52587890625e-05},
+            "gyro_z": {"from": "LSB", "to": "deg/s", "factor": 1.52587890625e-05}
+          },
+          "extra_fields": [
+            {"field": "imu_status", "label": "Status", "format": "int"},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "tow_s", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+        
+        "RAWIMUA": {
+          "tag": "RAWIMUA",
+          "type": "ascii",
+          "description": "Raw IMU Data (ASCII)",
+          // Same axis mapping + conversions as RAWIMUB
+          "field_mapping": {
+            "accel_x": "nyA",
+            "accel_y": "xA",
+            "accel_z": "zA",
+            "gyro_x": "nyG",
+            "gyro_y": "xG",
+            "gyro_z": "zG"
+          },
+          "conversions": {
+            "accel_x": {"from": "LSB", "to": "m/s²", "factor": -7.48188018798828e-06},
+            "accel_y": {"from": "LSB", "to": "m/s²", "factor": 7.48188018798828e-06},
+            "accel_z": {"from": "LSB", "to": "m/s²", "factor": 7.48188018798828e-06},
+            "gyro_x": {"from": "LSB", "to": "deg/s", "factor": -1.52587890625e-05},
+            "gyro_y": {"from": "LSB", "to": "deg/s", "factor": 1.52587890625e-05},
+            "gyro_z": {"from": "LSB", "to": "deg/s", "factor": 1.52587890625e-05}
+          },
+          "extra_fields": [
+            {"field": "imu_status", "label": "Status", "format": "int"}
+          ]
+        },
+
+        "CORRIMUDATAA": {
+          "tag": "CORRIMUDATAA",
+          "type": "ascii",
+          "description": "Corrected IMU Data (ASCII) - Incremental values per sample",
+          "field_mapping": {
+            // NovAtel uses: lateral(X-right), longitudinal(Y-forward), vertical(Z-up)
+            "accel_x": "lateral_acc",         // X-axis (right)
+            "accel_y": "longitudinal_acc",    // Y-axis (forward)
+            "accel_z": "vertical_acc",        // Z-axis (up)
+
+            // NovAtel frame is aircraft standard: X=forward, Y=right
+            // Our sensor: X=right, Y=forward (90° rotated from aircraft)
+            // NovAtel roll_rate (about aircraft Y=right) maps to our X=right
+            // NovAtel pitch_rate (about aircraft X=forward) maps to our Y=forward
+            "gyro_x": "roll_rate_rad",        // about Y-axis → X rotation
+            "gyro_y": "pitch_rate_rad",       // about X-axis → Y rotation
+            "gyro_z": "yaw_rate_rad"          // about Z-axis (same)
+          },
+          "extra_fields": [
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ],
+          "conversions": {
+            "gyro_x": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_y": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58},
+            "gyro_z": {"from": "rad/sample", "to": "deg/s", "factor": 5729.58}
+          }
+        },
+
+        "INSATTB": {
+          "id": 263,
+          "type": "binary",
+          "description": "INS Attitude (Binary) - Direct Roll/Pitch/Yaw",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"
+          },
+          "extra_fields": [
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSATTA": {
+          "tag": "INSATTA",
+          "type": "ascii",
+          "description": "INS Attitude (ASCII) - Direct Roll/Pitch/Yaw",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"
+          },
+          "extra_fields": [
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSPVAB": {
+          "id": 507,
+          "type": "binary",
+          "description": "INS Position/Velocity/Attitude (Binary) - Roll/Pitch/Yaw + PVA",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSPVAA": {
+          "tag": "INSPVAA",
+          "type": "ascii",
+          "description": "INS Position/Velocity/Attitude (ASCII) - Roll/Pitch/Yaw + PVA",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        }
+      }
+    },
+
+    // ============================================================
+    // TIME CAPABILITY
+    // ============================================================
+    "time": {
+      "standard_fields": [
+        {"name": "gps_week", "label": "GPS Week", "unit": "", "format": "int"},
+        {"name": "gps_seconds", "label": "GPS Seconds", "unit": "s", "format": "float", "decimals": 3},
+        {"name": "utc_time", "label": "UTC Time", "unit": "", "format": "time"},
+        {"name": "utc_offset", "label": "UTC Offset", "unit": "s", "format": "float", "decimals": 1}
+      ],
+
+      "sources": {
+        "TIMEB": {
+          "id": 101,
+          "type": "binary",
+          "description": "Time",
+          "field_mapping": {
+            "utc_offset": "utc_offset_s"
+          },
+          "extra_fields": [
+            {"field": "clock_status", "label": "Clock Status", "format": "int"},
+            {"field": "utc_year", "label": "Year", "format": "int"},
+            {"field": "utc_month", "label": "Month", "format": "int"},
+            {"field": "utc_day", "label": "Day", "format": "int"}
+          ]
+        },
+
+        "ZDA": {
+          "id": "ZDA",
+          "type": "nmea",
+          "description": "UTC Time and Date",
+          "field_mapping": {
+            "utc_time": "time_utc"
+          },
+          "extra_fields": [
+            {"field": "day", "label": "Day", "format": "int"},
+            {"field": "month", "label": "Month", "format": "int"},
+            {"field": "year", "label": "Year", "format": "int"}
+          ]
+        }
+      }
+    }
+  }
+}

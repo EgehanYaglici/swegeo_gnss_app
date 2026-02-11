@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWEGEO GNSS Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap&subset=latin-ext"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+  <!-- Custom Title Bar -->
+  <div id="titlebar">
+    <div id="titlebar-drag">
+      <img src="../../assets/swegeo_logo.png" alt="SWEGEO" id="titlebar-logo">
+      <span id="titlebar-title">SWEGEO GNSS Monitor</span>
+    </div>
+    <div id="titlebar-right">
+      <!-- Connection Button -->
+      <button id="btn-connect-titlebar" class="titlebar-connection-btn disconnected" title="Connection">
+        <!-- Disconnected: Broken Chain Icon -->
+        <svg class="conn-icon conn-icon-disconnected" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          <line x1="2" y1="2" x2="22" y2="22" />
+        </svg>
+        <!-- Connected: Solid Chain Icon -->
+        <svg class="conn-icon conn-icon-connected" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" style="display:none">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+        <span class="connection-status-text">Disconnected</span>
+      </button>
+      <!-- Window Controls -->
+      <div id="titlebar-controls">
+        <button id="btn-minimize" class="titlebar-btn" onclick="api.minimize()">
+          <svg width="10" height="1" viewBox="0 0 10 1">
+            <rect width="10" height="1" fill="currentColor" />
+          </svg>
+        </button>
+        <button id="btn-maximize" class="titlebar-btn" onclick="api.maximize()">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <rect width="10" height="10" fill="none" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </button>
+        <button id="btn-close" class="titlebar-btn titlebar-btn-close" onclick="api.close()">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2" />
+            <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div id="app-container">
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="expanded">
+      <!-- SWEGEO Header -->
+      <div class="sidebar-header">
+        <span class="sidebar-logo-text">SWEGEO</span>
+        <button id="btn-sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <div class="sidebar-nav">
+        <div class="nav-indicator"></div>
+        <button class="nav-btn active" data-page="dashboard" title="Dashboard">
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-btn" data-page="terminal" title="Terminal">
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          <span class="nav-label">Terminal</span>
+        </button>
+        <button class="nav-btn" data-page="settings" title="Settings">
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <span class="nav-label">Settings</span>
+        </button>
+        <button class="nav-btn" data-page="ntrip" title="NTRIP Client">
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+            <line x1="12" y1="20" x2="12.01" y2="20" />
+          </svg>
+          <span class="nav-label">NTRIP Client</span>
+        </button>
+      </div>
+
+      <!-- Update Panel -->
+      <div class="sidebar-update-panel" id="sidebar-update-panel">
+        <div class="update-version-row">
+          <svg class="update-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span class="update-version-text" id="update-version">v0.1.0</span>
+        </div>
+        <!-- Status area (hidden by default, shows on update events) -->
+        <div class="update-status-area" id="update-status-area" style="display:none">
+          <div class="update-status-text" id="update-status-text"></div>
+          <div class="update-progress-bar" id="update-progress-bar" style="display:none">
+            <div class="update-progress-fill" id="update-progress-fill"></div>
+          </div>
+          <div class="update-actions" id="update-actions" style="display:none">
+            <button class="update-btn" id="update-btn-download">Download</button>
+            <button class="update-btn update-btn-install" id="update-btn-install" style="display:none">Restart & Update</button>
+          </div>
+        </div>
+        <!-- Changelog toggle -->
+        <div class="update-changelog-toggle" id="update-changelog-toggle" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span>What's new</span>
+          <svg class="update-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <div class="update-changelog-content" id="update-changelog-content" style="display:none">
+          <div class="update-changelog-text" id="update-changelog-text">No changelog available.</div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main id="main-content">
+
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+        </div>
+        <div id="cards-grid">
+          <!-- Position Card -->
+          <div class="card" id="position-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <h3>Position</h3>
+              </div>
+              <div class="card-controls">
+                <div class="status-toggle inactive" id="pos-toggle">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <div id="pos-source-container" class="source-selector-container">
+                  <div id="pos-source-selector"></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body position-body-split">
+              <!-- Left: Data Panel (45%) -->
+              <div class="pos-data-panel">
+                <!-- Primary Rows -->
+                <div class="pos-primary-row">
+                  <span class="pos-label">Lat</span>
+                  <span class="pos-value-primary" id="pos-lat">--</span>
+                </div>
+                <div class="pos-primary-row">
+                  <span class="pos-label">Lon</span>
+                  <span class="pos-value-primary" id="pos-lon">--</span>
+                </div>
+
+                <!-- Secondary Grid (2 cols) -->
+                <div class="pos-secondary-grid">
+                  <div class="pos-grid-item">
+                    <span class="pos-label">Alt</span>
+                    <span class="pos-value-secondary" id="pos-alt">--</span>
+                  </div>
+                  <div class="pos-grid-item">
+                    <span class="pos-label">H.Acc</span>
+                    <span class="pos-value-secondary" id="pos-hacc">--</span>
+                  </div>
+                  <div class="pos-grid-item">
+                    <span class="pos-label">V.Acc</span>
+                    <span class="pos-value-secondary" id="pos-vacc">--</span>
+                  </div>
+                </div>
+
+                <!-- Dynamic Grid -->
+                <div id="pos-extra-fields" class="pos-dynamic-grid"></div>
+              </div>
+
+              <!-- Right: Map Panel (55%) -->
+              <div class="pos-map-panel">
+                <div id="pos-map" class="mini-map"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Satellite Card -->
+          <div class="card" id="satellite-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g transform="rotate(-45 12 12)">
+                    <rect x="9" y="9" width="6" height="6" rx="1" fill="#3B82F6" />
+                    <path d="M2 10H8V14H2C1.44772 14 1 13.5523 1 13V11C1 10.4477 1.44772 10 2 10Z" fill="#3B82F6" />
+                    <path d="M16 10H22C22.5523 10 23 10.4477 23 11V13C23 13.5523 22.5523 14 22 14H16V10Z"
+                      fill="#3B82F6" />
+                    <rect x="3" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
+                    <rect x="5.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
+                    <rect x="16.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
+                    <rect x="19" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
+                    <rect x="11" y="15" width="2" height="2" fill="#3B82F6" />
+                    <path d="M8.5 17C8.5 17 9.5 19.5 12 19.5C14.5 19.5 15.5 17 15.5 17" stroke="#3B82F6"
+                      stroke-width="2" stroke-linecap="round" />
+                    <circle cx="12" cy="18" r="1" fill="#3B82F6" />
+                  </g>
+                </svg>
+                <h3>Satellites</h3>
+              </div>
+              <div class="card-controls">
+                <div class="status-toggle inactive" id="sat-toggle">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <div id="sat-source-container" class="source-selector-container">
+                  <div id="sat-source-selector"></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="skyplot" width="240" height="240"></canvas>
+              <div id="sat-stats" class="sat-stats"></div>
+            </div>
+          </div>
+
+          <!-- Attitude Card -->
+          <div class="card" id="imu-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <h3>Attitude</h3>
+              </div>
+              <div class="card-controls">
+                <div class="status-toggle inactive" id="att-toggle">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                </div>
+                <div class="source-selector-container" id="att-source-container">
+                  <div id="att-source-selector"></div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body att-card-body">
+              <div class="att-pfd-container">
+                <canvas id="att-horizon"></canvas>
+                <div class="att-no-att-overlay" id="att-no-att" style="display:none">NO ATTITUDE DATA</div>
+              </div>
+              <div class="att-data-panel">
+                <div class="att-primary-grid">
+                  <div class="att-primary-cell">
+                    <div class="att-label">ROLL</div>
+                    <div class="att-value-primary" id="att-roll">--</div>
+                  </div>
+                  <div class="att-primary-cell">
+                    <div class="att-label">PITCH</div>
+                    <div class="att-value-primary" id="att-pitch">--</div>
+                  </div>
+                  <div class="att-primary-cell">
+                    <div class="att-label">YAW</div>
+                    <div class="att-value-primary" id="att-yaw">--</div>
+                  </div>
+                </div>
+                <div class="att-status-row">
+                  <span class="att-label-sm">INS</span>
+                  <span class="att-status-badge" id="att-ins-status">--</span>
+                </div>
+                <div class="att-secondary-grid">
+                  <div class="att-sec-cell"><span class="att-label-sm">Acc X</span><span class="att-value-secondary" id="att-ax">--</span></div>
+                  <div class="att-sec-cell"><span class="att-label-sm">Acc Y</span><span class="att-value-secondary" id="att-ay">--</span></div>
+                  <div class="att-sec-cell"><span class="att-label-sm">Acc Z</span><span class="att-value-secondary" id="att-az">--</span></div>
+                  <div class="att-sec-cell"><span class="att-label-sm">Gyr X</span><span class="att-value-secondary" id="att-gx">--</span></div>
+                  <div class="att-sec-cell"><span class="att-label-sm">Gyr Y</span><span class="att-value-secondary" id="att-gy">--</span></div>
+                  <div class="att-sec-cell"><span class="att-label-sm">Gyr Z</span><span class="att-value-secondary" id="att-gz">--</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Velocity Card (Placeholder) -->
+          <div class="card" id="velocity-card">
+            <div class="card-header">
+              <div class="card-title-row">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                <h3>Velocity</h3>
+              </div>
+            </div>
+            <div class="card-body placeholder-body">
+              <span class="placeholder-text">Coming soon</span>
+            </div>
+          </div>
+
+          <!-- Device Monitor -->
+          <div class="card" id="device-monitor-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <h3>Device Monitor</h3>
+              </div>
+              <div class="card-controls">
+                <button class="dm-refresh-btn" id="dm-refresh" title="Refresh">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="card-body dm-card-body">
+              <!-- Connection info -->
+              <div class="dm-conn-row" id="dm-conn-row">
+                <span class="dm-conn-dot disconnected" id="dm-conn-dot"></span>
+                <span class="dm-conn-label" id="dm-conn-label">Not connected</span>
+                <span class="dm-conn-uptime" id="dm-conn-uptime"></span>
+              </div>
+
+              <!-- Ports section -->
+              <div class="dm-section">
+                <div class="dm-section-header">
+                  <span class="dm-section-title">PORTS</span>
+                  <span class="dm-section-badge" id="dm-port-count">0</span>
+                </div>
+                <div class="dm-port-list" id="dm-port-list">
+                  <div class="dm-empty-hint">Connect to query</div>
+                </div>
+              </div>
+
+              <!-- Active messages section -->
+              <div class="dm-section">
+                <div class="dm-section-header">
+                  <span class="dm-section-title">ACTIVE LOGS</span>
+                  <span class="dm-section-badge" id="dm-log-count">0</span>
+                </div>
+                <div class="dm-log-list" id="dm-log-list">
+                  <div class="dm-empty-hint">Connect to query</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RTK Correction Card -->
+          <div class="card" id="rtk-card">
+            <div class="card-header">
+              <div class="card-title-row">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                  <line x1="12" y1="20" x2="12.01" y2="20" />
+                </svg>
+                <h3>RTK Correction</h3>
+              </div>
+              <div class="rtk-header-actions">
+                <span id="rtk-status-dot" class="rtk-dot disconnected"></span>
+              </div>
+            </div>
+            <div class="card-body rtk-card-body">
+              <!-- Disconnected state -->
+              <div id="rtk-disconnected" class="rtk-state">
+                <!-- Quick Connect Profiles -->
+                <div class="rtk-profiles">
+                  <div class="rtk-profile-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                    <span>Quick Connect</span>
+                  </div>
+                  <div id="rtk-profile-list" class="rtk-profile-list">
+                    <!-- Will be populated by JS -->
+                  </div>
+                </div>
+
+                <!-- Manual Connect Button -->
+                <button id="rtk-btn-connect" class="btn-primary btn-sm rtk-manual-connect">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                    <line x1="12" y1="20" x2="12.01" y2="20" />
+                  </svg>
+                  Configure & Connect
+                </button>
+              </div>
+
+              <!-- Connected state -->
+              <div id="rtk-connected" class="rtk-state" style="display:none">
+                <!-- Connection Header -->
+                <div class="rtk-conn-header">
+                  <div class="rtk-conn-title">
+                    <div class="rtk-conn-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                      </svg>
+                    </div>
+                    <div class="rtk-conn-details">
+                      <div class="rtk-mount-name" id="rtk-mount">—</div>
+                      <div class="rtk-host-name" id="rtk-host">—</div>
+                    </div>
+                  </div>
+                  <div class="rtk-live-indicator">
+                    <span class="rtk-live-pulse"></span>
+                    <span class="rtk-live-text">LIVE</span>
+                  </div>
+                </div>
+
+                <!-- Data Rate Visual -->
+                <div class="rtk-data-visual">
+                  <div class="rtk-data-label">
+                    <span>Data Rate</span>
+                    <span id="rtk-rate" class="rtk-data-value">—</span>
+                  </div>
+                  <div class="rtk-progress-bar">
+                    <div id="rtk-progress-fill" class="rtk-progress-fill"></div>
+                  </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="rtk-stats-grid">
+                  <div class="rtk-stat-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                    <div class="rtk-stat-content">
+                      <span class="rtk-stat-label">Messages</span>
+                      <span id="rtk-msgs" class="rtk-stat-value">—</span>
+                    </div>
+                  </div>
+                  <div class="rtk-stat-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <div class="rtk-stat-content">
+                      <span class="rtk-stat-label">Duration</span>
+                      <span id="rtk-duration" class="rtk-stat-value">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RTCM Types -->
+                <div class="rtk-rtcm-section">
+                  <div class="rtk-rtcm-header">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    <span>RTCM Types</span>
+                  </div>
+                  <div id="rtk-types" class="rtk-types"></div>
+                </div>
+
+                <!-- Disconnect Button -->
+                <button id="rtk-btn-disconnect" class="btn-danger btn-sm rtk-disconnect-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+
+                  </svg>
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal Page -->
+      <div id="page-terminal" class="page">
+        <div class="page-header">
+          <h1>Terminal Output</h1>
+          <div class="terminal-toolbar">
+            <button id="btn-term-time" class="term-tool-btn" title="Show Timestamps">
+              <!-- SVG Injected by JS -->
+              <span class="btn-label">Time</span>
+            </button>
+            <button id="btn-term-scroll" class="term-tool-btn active" title="Auto-Scroll Lock">
+              <!-- SVG Injected by JS -->
+              <span class="btn-label">Scroll</span>
+            </button>
+            <div class="term-separator"></div>
+            <button id="btn-term-clear" class="term-tool-btn" title="Clear Log">
+              <!-- SVG Injected by JS -->
+              <span class="btn-label">Clear</span>
+            </button>
+            <button id="btn-term-save" class="term-tool-btn" title="Save Log">
+              <!-- SVG Injected by JS -->
+              <span class="btn-label">Save</span>
+            </button>
+          </div>
+        </div>
+        <div id="terminal-output" class="terminal-output"></div>
+        <div class="terminal-input-row">
+          <input type="text" id="terminal-input" class="terminal-input"
+            placeholder="Enter command (e.g. LOG BESTPOSA ONTIME 1)...">
+          <button id="btn-send-cmd" class="btn-primary">Send</button>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="page-settings" class="page">
+        <div class="page-header">
+          <h1>Settings</h1>
+        </div>
+
+        <!-- Settings Tab Bar -->
+        <div class="settings-tabs">
+          <button class="settings-tab active" data-settings-tab="messages">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Messages
+          </button>
+          <button class="settings-tab" data-settings-tab="base-rover">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+              <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+              <line x1="12" y1="20" x2="12.01" y2="20" />
+            </svg>
+            Base / Rover
+          </button>
+          <button class="settings-tab" data-settings-tab="ethernet">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+              <line x1="6" y1="6" x2="6.01" y2="6" />
+              <line x1="6" y1="18" x2="6.01" y2="18" />
+            </svg>
+            Ethernet
+          </button>
+          <button class="settings-tab" data-settings-tab="ins">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <line x1="9" y1="4" x2="9" y2="20" />
+              <line x1="15" y1="4" x2="15" y2="20" />
+            </svg>
+            INS
+          </button>
+          <button class="settings-tab" data-settings-tab="heading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            Heading
+          </button>
+        </div>
+
+        <!-- Settings Tab Panels -->
+        <div class="settings-tab-panels">
+
+          <!-- Messages Tab Panel -->
+          <div class="settings-panel active" id="settings-panel-messages">
+            <!-- Messages Toolbar -->
+            <div class="messages-toolbar">
+              <div class="messages-search-wrapper">
+                <svg class="messages-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" id="msg-search" class="messages-search" placeholder="Search messages...">
+              </div>
+              <div class="messages-filter-tabs">
+                <button class="msg-filter-btn active" data-filter="all">All</button>
+                <button class="msg-filter-btn" data-filter="nmea">NMEA</button>
+                <button class="msg-filter-btn" data-filter="ascii">ASCII</button>
+                <button class="msg-filter-btn" data-filter="binary">Binary</button>
+              </div>
+            </div>
+
+            <!-- Messages Table -->
+            <div class="messages-table-container">
+              <table class="messages-table" id="messages-table">
+                <thead>
+                  <tr>
+                    <th class="col-enable">Enable</th>
+                    <th class="col-name">Message</th>
+                    <th class="col-desc">Description</th>
+                    <th class="col-hz">Hz</th>
+                    <th class="col-active">Active On</th>
+                  </tr>
+                </thead>
+                <tbody id="messages-table-body">
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Port Selection -->
+            <div class="messages-port-section">
+              <div class="port-tabs">
+                <button class="port-tab active" data-port-tab="serial">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="8" rx="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" />
+                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                  </svg>
+                  Serial <span class="port-tab-count" id="port-count-serial">0</span>
+                </button>
+                <button class="port-tab" data-port-tab="ethernet">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 11a9 9 0 0 1 18 0" />
+                    <path d="M8 11a5 5 0 0 1 10 0" />
+                    <circle cx="13" cy="11" r="1" />
+                    <line x1="13" y1="12" x2="13" y2="20" />
+                  </svg>
+                  Ethernet <span class="port-tab-count" id="port-count-ethernet">0</span>
+                </button>
+              </div>
+              <div class="port-slides-wrapper">
+                <div class="port-slide active" id="port-slide-serial">
+                  <div class="port-group-chips" id="msg-port-serial">
+                    <span class="port-placeholder">Connect to discover ports...</span>
+                  </div>
+                </div>
+                <div class="port-slide" id="port-slide-ethernet">
+                  <div class="port-group-chips" id="msg-port-ethernet">
+                    <span class="port-placeholder">Connect to discover ICOM ports...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Action Bar -->
+            <div class="messages-actions">
+              <div id="msg-status" class="messages-status">Ready</div>
+              <div class="messages-action-buttons">
+                <button id="btn-msg-refresh" class="btn-secondary btn-sm" title="Refresh ports and status">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  Refresh
+                </button>
+                <button id="btn-msg-stop-all" class="btn-danger btn-sm" title="Stop all messages on selected ports">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  </svg>
+                  Stop All
+                </button>
+                <button id="btn-msg-apply" class="btn-primary btn-sm" title="Apply checked messages">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Apply
+                </button>
+                <button id="btn-msg-save" class="btn-success btn-sm" title="Save configuration to device">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <!-- Message Info Panel (slide-in from right) -->
+            <div id="msg-info-panel" class="msg-info-panel">
+              <div class="msg-info-header">
+                <div>
+                  <h3 id="msg-info-title" class="msg-info-title"></h3>
+                  <span id="msg-info-desc" class="msg-info-desc"></span>
+                </div>
+                <button id="btn-msg-info-close" class="msg-info-close">&times;</button>
+              </div>
+              <div class="msg-info-body">
+                <table class="msg-fields-table">
+                  <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                    <col>
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Value</th>
+                      <th>Type</th>
+                      <th>Unit</th>
+                      <th>Note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="msg-info-fields"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Base/Rover Tab Panel -->
+          <div class="settings-panel" id="settings-panel-base-rover">
+            <div class="settings-split-layout">
+              <!-- Left Column: Config + Overview -->
+              <div class="settings-left-col">
+                <!-- Port Config -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Interface / Port</div>
+                  <div class="br-port-grid">
+                    <div class="form-group">
+                      <label>Port</label>
+                      <input type="text" id="br-port" class="form-control" placeholder="COM2" value="COM2">
+                    </div>
+                    <div class="form-group">
+                      <label>Baud</label>
+                      <select id="br-baud" class="form-control">
+                        <option>9600</option>
+                        <option>19200</option>
+                        <option>38400</option>
+                        <option>57600</option>
+                        <option selected>115200</option>
+                        <option>230400</option>
+                        <option>460800</option>
+                        <option>921600</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>IN Mode</label>
+                      <select id="br-in-mode" class="form-control">
+                        <option>BYNAV</option>
+                        <option>AUTO</option>
+                        <option>RTCM</option>
+                        <option>NMEA</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>OUT Mode</label>
+                      <select id="br-out-mode" class="form-control">
+                        <option>AUTO</option>
+                        <option>BYNAV</option>
+                        <option selected>RTCM</option>
+                        <option>NMEA</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Role / Station -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Role / Station</div>
+                  <div class="br-role-grid">
+                    <div class="form-group">
+                      <label>Role</label>
+                      <select id="br-role" class="form-control">
+                        <option value="ROVER">ROVER</option>
+                        <option value="BASE" selected>BASE</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Station ID (DGPSTXID)</label>
+                      <input type="text" id="br-station-id" class="form-control" placeholder="1001">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fix Mode (BASE only) -->
+                <div class="settings-section" id="br-fix-section">
+                  <div class="settings-section-title">Base Positioning</div>
+                  <div class="br-fix-radios">
+                    <label class="br-radio-label"><input type="radio" name="br-fix" value="auto" checked> FIX
+                      AUTO</label>
+                    <label class="br-radio-label"><input type="radio" name="br-fix" value="position"> FIX
+                      POSITION</label>
+                    <label class="br-radio-label"><input type="radio" name="br-fix" value="none"> FIX NONE</label>
+                    <label class="br-radio-label"><input type="radio" name="br-fix" value="base"> FIX BASE (avg)</label>
+                  </div>
+                  <div id="br-fix-pos-inputs" class="br-fix-inputs hidden">
+                    <div class="form-group"><label>Latitude (°)</label><input type="number" id="br-lat"
+                        class="form-control" step="0.00000001" value="0"></div>
+                    <div class="form-group"><label>Longitude (°)</label><input type="number" id="br-lon"
+                        class="form-control" step="0.00000001" value="0"></div>
+                    <div class="form-group"><label>Height (m)</label><input type="number" id="br-height"
+                        class="form-control" step="0.001" value="0"></div>
+                  </div>
+                  <div id="br-fix-base-inputs" class="br-fix-inputs hidden">
+                    <div class="form-group"><label>Avg Seconds</label><input type="number" id="br-avg-secs"
+                        class="form-control" value="60" min="5" max="3600"></div>
+                    <div class="form-group"><label>Avg Meters</label><input type="number" id="br-avg-meters"
+                        class="form-control" value="3.0" min="0.1" max="50" step="0.1"></div>
+                  </div>
+                </div>
+
+                <!-- Device Overview -->
+                <div class="settings-section" id="br-overview-section">
+                  <div class="settings-section-title">Current Device Status</div>
+                  <div class="br-status-grid" id="br-status-grid">
+                    <div class="br-stat-row"><span class="br-stat-label">Role</span><span class="br-stat-value"
+                        id="br-ov-role">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">Station ID</span><span class="br-stat-value"
+                        id="br-ov-station">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">Port</span><span class="br-stat-value"
+                        id="br-ov-port">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">Baud</span><span class="br-stat-value"
+                        id="br-ov-baud">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">IN / OUT</span><span class="br-stat-value"
+                        id="br-ov-modes">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">RTCM Active</span><span class="br-stat-value"
+                        id="br-ov-rtcm">—</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: RTCM Messages (full height) -->
+              <div class="settings-right-col" id="br-right-col">
+                <div class="settings-section" id="br-rtcm-section"
+                  style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+                  <div class="settings-section-title">RTCM Output Messages</div>
+                  <div id="br-rtcm-list" class="br-rtcm-scroll" style="flex:1;overflow-y:auto"></div>
+                  <div class="br-rtcm-actions">
+                    <button id="br-btn-disable-sel" class="btn-secondary btn-sm">Disable Selected</button>
+                    <button id="br-btn-disable-all" class="btn-danger btn-sm">Disable ALL</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Action Bar (same as Messages) -->
+            <div class="messages-actions">
+              <div class="br-action-left">
+                <span id="br-status" class="messages-status">Ready</span>
+              </div>
+              <div class="messages-action-buttons">
+                <button id="br-btn-pull" class="btn-secondary btn-sm" title="Pull configuration from device">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="8 17 12 21 16 17" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
+                  </svg>
+                  Pull
+                </button>
+                <button id="br-btn-send" class="btn-primary btn-sm" title="Apply configuration">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Apply
+                </button>
+                <button id="br-btn-save" class="btn-success btn-sm" title="Save configuration to device">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ethernet Tab Panel -->
+          <div class="settings-panel" id="settings-panel-ethernet">
+            <div class="settings-split-layout">
+              <!-- Left Column: Device Configuration -->
+              <div class="settings-left-col">
+                <div class="settings-section">
+                  <div class="settings-section-title">Device IP Configuration</div>
+                  <div class="eth-dev-grid">
+                    <div class="form-group"><label>IPv4</label><input type="text" id="eth-dev-ip" class="form-control"
+                        placeholder="192.168.1.100"></div>
+                    <div class="form-group"><label>Mask</label><input type="text" id="eth-dev-mask" class="form-control"
+                        placeholder="255.255.255.0"></div>
+                    <div class="form-group"><label>Gateway</label><input type="text" id="eth-dev-gw"
+                        class="form-control" placeholder="192.168.1.1"></div>
+                  </div>
+                  <div class="eth-controls-grid" style="margin-top:8px">
+                    <div class="form-group"><label>Interface</label><select id="eth-iface" class="form-control">
+                        <option>ETHA</option>
+                      </select></div>
+                    <div class="form-group"><label>IP Mode</label><select id="eth-mode" class="form-control">
+                        <option>STATIC</option>
+                        <option>DHCP</option>
+                      </select></div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section-title">ICOM Configuration</div>
+                  <div class="eth-controls-grid eth-icom-grid">
+                    <div class="form-group"><label>ICOM Port</label><select id="eth-icom" class="form-control">
+                        <option>ICOM1</option>
+                        <option>ICOM2</option>
+                        <option>ICOM3</option>
+                        <option>ICOM4</option>
+                      </select></div>
+                    <div class="form-group"><label>TCP Port</label><input type="number" id="eth-tcp-port"
+                        class="form-control" value="3001" min="1" max="65535"></div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section-title">Current Device Status</div>
+                  <div class="br-status-grid" id="eth-status-grid">
+                    <div class="br-stat-row"><span class="br-stat-label">IP Mode</span><span class="br-stat-value"
+                        id="eth-ov-mode">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">IPv4</span><span class="br-stat-value"
+                        id="eth-ov-ip">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">Mask</span><span class="br-stat-value"
+                        id="eth-ov-mask">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">Gateway</span><span class="br-stat-value"
+                        id="eth-ov-gw">—</span></div>
+                    <div class="br-stat-row"><span class="br-stat-label">ICOM Ports</span><span class="br-stat-value"
+                        id="eth-ov-icom">—</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: PC Network + Device Tables -->
+              <div class="settings-right-col">
+                <div class="settings-section">
+                  <div class="settings-section-title">PC Network
+                    <button id="eth-btn-refresh-pc" class="btn-secondary btn-sm"
+                      style="float:right;margin-top:-4px">Refresh</button>
+                  </div>
+                  <div class="eth-adapter-row">
+                    <select id="eth-adapter" class="form-control"></select>
+                  </div>
+                  <div class="eth-ip-display">
+                    <div class="eth-ip-row"><span>IPv4:</span><span id="eth-pc-ip">—</span></div>
+                    <div class="eth-ip-row"><span>Mask:</span><span id="eth-pc-mask">—</span></div>
+                    <div class="eth-ip-row"><span>Gateway:</span><span id="eth-pc-gw">—</span></div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section-title">ARP Table
+                    <button id="eth-btn-refresh-arp" class="btn-secondary btn-sm"
+                      style="float:right;margin-top:-4px">Refresh</button>
+                  </div>
+                  <div class="eth-arp-scroll">
+                    <table class="br-info-table">
+                      <thead>
+                        <tr>
+                          <th>IP</th>
+                          <th>MAC</th>
+                          <th>Type</th>
+                        </tr>
+                      </thead>
+                      <tbody id="eth-arp-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section-title">Device IP Config (from device)</div>
+                  <div class="eth-table-scroll">
+                    <table class="br-info-table">
+                      <thead>
+                        <tr>
+                          <th>Iface</th>
+                          <th>Mode</th>
+                          <th>IP</th>
+                          <th>Mask</th>
+                          <th>GW</th>
+                        </tr>
+                      </thead>
+                      <tbody id="eth-ipconfig-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section-title">ICOM Ports (from device)</div>
+                  <div class="eth-table-scroll">
+                    <table class="br-info-table">
+                      <thead>
+                        <tr>
+                          <th>ICOM</th>
+                          <th>Protocol</th>
+                          <th>Port</th>
+                          <th>IN</th>
+                          <th>OUT</th>
+                        </tr>
+                      </thead>
+                      <tbody id="eth-icom-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Action Bar -->
+            <div class="messages-actions">
+              <div class="br-action-left">
+                <span id="eth-status" class="messages-status">Ready</span>
+              </div>
+              <div class="messages-action-buttons">
+                <button id="eth-btn-pull" class="btn-secondary btn-sm" title="Pull configuration from device">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="8 17 12 21 16 17" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29" />
+                  </svg>
+                  Pull
+                </button>
+                <button id="eth-btn-send" class="btn-primary btn-sm" title="Apply configuration">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Apply
+                </button>
+                <button id="eth-btn-save" class="btn-success btn-sm" title="Save configuration to device">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- INS Tab Panel -->
+          <div class="settings-panel" id="settings-panel-ins">
+            <div class="settings-split-layout">
+              <!-- Left Column (scrollable controls) -->
+              <div class="settings-left-col">
+                <!-- IMU Direction -->
+                <div class="settings-section">
+                  <div class="settings-section-title">IMU Body Direction</div>
+                  <div class="ins-direction-grid">
+                    <div class="ins-dir-group">
+                      <label class="ins-dir-label">IMU X axis points to vehicle:</label>
+                      <div class="ins-dir-radios">
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+X" checked>
+                          +X</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-X"> -X</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Y"> +Y</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Y"> -Y</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Z"> +Z</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Z"> -Z</label>
+                      </div>
+                    </div>
+                    <div class="ins-dir-group">
+                      <label class="ins-dir-label">IMU Y axis points to vehicle:</label>
+                      <div class="ins-dir-radios">
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+X"> +X</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-X"> -X</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+Y" checked>
+                          +Y</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Y"> -Y</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+Z"> +Z</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Z"> -Z</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="ins-rbv-label" class="ins-rbv-label">RBV: X=0.0° Y=0.0° Z=0.0°</div>
+                </div>
+
+                <!-- Lever Arms -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Antenna Lever Arms (m, vehicle frame)</div>
+                  <div class="ins-lever-grid">
+                    <div class="ins-lever-row">
+                      <span class="ins-lever-name">ANT1 (Primary)</span>
+                      <div class="ins-lever-inputs">
+                        <div class="ins-spin-group"><label>X</label><input type="number" id="ins-ant1-x"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                        <div class="ins-spin-group"><label>Y</label><input type="number" id="ins-ant1-y"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                        <div class="ins-spin-group"><label>Z</label><input type="number" id="ins-ant1-z"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                      </div>
+                    </div>
+                    <div id="ins-ant2-section" class="ins-lever-row">
+                      <span class="ins-lever-name">ANT2 (Secondary)</span>
+                      <div class="ins-lever-inputs">
+                        <div class="ins-spin-group"><label>X</label><input type="number" id="ins-ant2-x"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                        <div class="ins-spin-group"><label>Y</label><input type="number" id="ins-ant2-y"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                        <div class="ins-spin-group"><label>Z</label><input type="number" id="ins-ant2-z"
+                            class="settings-spin-input" value="0" step="0.001"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ins-lever-actions">
+                    <label class="hdg-ck-label"><input type="checkbox" id="ins-ck-ant2" checked> Use ANT2</label>
+                    <button id="ins-btn-swap" class="btn-secondary btn-sm">Swap ANT1/ANT2</button>
+                  </div>
+                </div>
+
+                <!-- Behavior / Profile -->
+                <div class="settings-section">
+                  <div class="settings-section-title">INS Behavior</div>
+                  <div class="ins-behavior-grid">
+                    <div class="form-group">
+                      <label>Profile</label>
+                      <select id="ins-profile" class="form-control">
+                        <option>LAND</option>
+                        <option>BASIC</option>
+                        <option>MARINE</option>
+                        <option>FIXEDWING</option>
+                        <option>FOOT</option>
+                        <option>RAIL</option>
+                        <option>AGRICULTURE</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Alignment Speed (m/s)</label>
+                      <input type="number" id="ins-align-vel" class="form-control" value="2.0" min="0" max="50"
+                        step="0.1">
+                    </div>
+                  </div>
+                  <div class="ins-special-checks">
+                    <label class="hdg-ck-label"><input type="checkbox" id="ins-ck-staticyaw"> STATICYAW</label>
+                    <label class="hdg-ck-label"><input type="checkbox" id="ins-ck-align_trial"> ALIGN_TRIAL</label>
+                    <label class="hdg-ck-label"><input type="checkbox" id="ins-ck-vibrate"> VIBRATE</label>
+                    <label class="hdg-ck-label"><input type="checkbox" id="ins-ck-trust"> TRUST</label>
+                  </div>
+                </div>
+
+                <!-- Preview + Actions -->
+                <div class="ins-bottom">
+                  <textarea id="ins-preview" class="settings-preview" rows="6" readonly></textarea>
+                  <div class="ins-actions-row">
+                    <div class="br-action-btns">
+                      <button id="ins-btn-pull" class="btn-secondary btn-sm">Pull INSCONFIGA</button>
+                      <button id="ins-btn-send" class="btn-primary btn-sm">Send Commands</button>
+                    </div>
+                  </div>
+                  <span id="ins-status" class="hdg-status">Ready</span>
+                </div>
+              </div>
+
+              <!-- Right Column (3D Canvas) -->
+              <div class="settings-right-col ins-canvas-col">
+                <div class="ins-canvas-wrapper">
+                  <canvas id="ins-3d-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Heading Tab Panel -->
+          <div class="settings-panel" id="settings-panel-heading">
+            <div class="settings-split-layout">
+              <!-- Left Column: Controls -->
+              <div class="settings-left-col">
+
+                <!-- Heading Offset Section -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Heading Offset</div>
+                  <!-- Big offset display -->
+                  <div class="hdg-offset-big" id="hdg-offset-big">+0.00°</div>
+                  <!-- Spin row -->
+                  <div class="hdg-spin-row">
+                    <button id="hdg-btn-rot-left" class="btn-secondary btn-sm" title="−90° Left (CCW)">−90°</button>
+                    <input type="number" id="hdg-spin-offset" class="settings-spin-input" value="0" min="-180" max="180"
+                      step="1">
+                    <button id="hdg-btn-rot-right" class="btn-secondary btn-sm" title="+90° Right (CW)">+90°</button>
+                  </div>
+                  <!-- Quick presets -->
+                  <div class="hdg-preset-row">
+                    <button class="hdg-preset-btn" data-angle="0">0°</button>
+                    <button class="hdg-preset-btn" data-angle="90">90°</button>
+                    <button class="hdg-preset-btn" data-angle="180">180°</button>
+                    <button class="hdg-preset-btn" data-angle="-90">−90°</button>
+                  </div>
+                </div>
+
+                <!-- Fixed Baseline Section -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Fixed Baseline</div>
+                  <label class="hdg-ck-label">
+                    <input type="checkbox" id="hdg-ck-fixed"> Use Fixed Baseline
+                  </label>
+                  <div id="hdg-baseline-inputs" class="hdg-baseline-grid hidden">
+                    <div class="form-group">
+                      <label>Baseline</label>
+                      <div class="hdg-inline-field">
+                        <input type="number" id="hdg-spin-baseline" class="settings-spin-input" value="0" min="0"
+                          max="1000" step="5">
+                        <span class="hdg-unit">cm</span>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Margin</label>
+                      <div class="hdg-inline-field">
+                        <input type="number" id="hdg-spin-margin" class="settings-spin-input" value="0" min="0"
+                          max="100" step="1">
+                        <span class="hdg-unit">cm</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Command Preview Section -->
+                <div class="settings-section">
+                  <div class="settings-section-title">Command Preview</div>
+                  <textarea id="hdg-preview" class="settings-preview" rows="4" readonly></textarea>
+                </div>
+
+                <!-- Bottom Actions -->
+                <div class="hdg-bottom-bar">
+                  <span id="hdg-status" class="hdg-status">Ready</span>
+                  <button id="hdg-btn-apply" class="btn-primary btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Column: Canvas -->
+              <div class="settings-right-col hdg-canvas-col">
+                <div class="hdg-canvas-wrapper">
+                  <canvas id="heading-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- NTRIP Client Page -->
+      <div id="page-ntrip" class="page">
+        <div class="page-header">
+          <h1>NTRIP Client</h1>
+        </div>
+        <div class="settings-split-layout ntrip-layout">
+          <!-- Left Column: Profiles + Connection Form -->
+          <div class="settings-left-col">
+            <!-- Profile Section -->
+            <div class="settings-section">
+              <div class="settings-section-title">Profiles</div>
+              <div class="ntrip-profile-row">
+                <select id="ntrip-profile-select" class="form-control">
+                  <option value="">— Select Profile —</option>
+                </select>
+                <button id="ntrip-btn-save-profile" class="btn-secondary btn-sm"
+                  title="Save current settings as profile">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save
+                </button>
+                <button id="ntrip-btn-delete-profile" class="btn-danger btn-sm" title="Delete selected profile">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Connection Form -->
+            <div class="settings-section">
+              <div class="settings-section-title">Connection</div>
+              <div class="ntrip-form-grid">
+                <div class="form-group ntrip-host-group">
+                  <label>Host / Caster</label>
+                  <input type="text" id="ntrip-host" class="form-control" placeholder="ntrip.example.com">
+                </div>
+                <div class="form-group ntrip-port-group">
+                  <label>Port</label>
+                  <input type="number" id="ntrip-port" class="form-control" value="2101" min="1" max="65535">
+                </div>
+                <div class="form-group ntrip-mount-group">
+                  <label>Mountpoint</label>
+                  <div class="ntrip-mount-row">
+                    <input type="text" id="ntrip-mountpoint" class="form-control" placeholder="e.g. MOUNT01">
+                    <button id="ntrip-btn-fetch-mounts" class="btn-secondary btn-sm"
+                      title="Fetch mountpoints from caster">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path
+                          d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9" />
+                      </svg>
+                      Fetch Mountpoints
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group ntrip-user-group">
+                  <label>Username</label>
+                  <input type="text" id="ntrip-username" class="form-control" placeholder="user">
+                </div>
+                <div class="form-group ntrip-pass-group">
+                  <label>Password</label>
+                  <input type="password" id="ntrip-password" class="form-control" placeholder="••••">
+                </div>
+              </div>
+            </div>
+
+            <!-- Source Table (hidden until fetched) -->
+            <div class="settings-section" id="ntrip-sourcetable-section" style="display:none">
+              <div class="settings-section-title">
+                Source Table
+                <span id="ntrip-source-count" class="ntrip-source-count"></span>
+              </div>
+              <div class="ntrip-sourcetable-scroll">
+                <table class="br-info-table">
+                  <thead>
+                    <tr>
+                      <th>Mountpoint</th>
+                      <th>Format</th>
+                      <th>Nav</th>
+                      <th>Country</th>
+                      <th>Network</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ntrip-sourcetable-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- GGA Info -->
+            <div class="settings-section">
+              <div class="settings-section-title">GGA Status</div>
+              <div class="br-status-grid">
+                <div class="br-stat-row"><span class="br-stat-label">Last GGA</span><span
+                    class="br-stat-value ntrip-gga-mono" id="ntrip-last-gga">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Source</span><span class="br-stat-value"
+                    id="ntrip-gga-source">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Status -->
+          <div class="settings-right-col">
+            <!-- Connection Status -->
+            <div class="settings-section">
+              <div class="settings-section-title">
+                Connection Status
+                <span id="ntrip-live-dot" class="ntrip-live-dot disconnected"></span>
+              </div>
+              <div class="br-status-grid" id="ntrip-status-grid">
+                <div class="br-stat-row"><span class="br-stat-label">Status</span><span class="br-stat-value"
+                    id="ntrip-conn-status">Disconnected</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Host</span><span class="br-stat-value"
+                    id="ntrip-conn-host">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Mountpoint</span><span class="br-stat-value"
+                    id="ntrip-conn-mount">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Duration</span><span class="br-stat-value"
+                    id="ntrip-conn-duration">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Data Rate</span><span class="br-stat-value"
+                    id="ntrip-conn-rate">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">Bytes Received</span><span class="br-stat-value"
+                    id="ntrip-conn-bytes">—</span></div>
+                <div class="br-stat-row"><span class="br-stat-label">RTCM Messages</span><span class="br-stat-value"
+                    id="ntrip-conn-msgs">—</span></div>
+              </div>
+            </div>
+
+            <!-- RTCM Message Types -->
+            <div class="settings-section ntrip-rtcm-section">
+              <div class="settings-section-title">RTCM Message Types (Live)</div>
+              <div class="ntrip-rtcm-table-scroll">
+                <table class="br-info-table">
+                  <thead>
+                    <tr>
+                      <th>Type ID</th>
+                      <th>Count</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ntrip-rtcm-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Error Log -->
+            <div class="settings-section">
+              <div class="settings-section-title">Log</div>
+              <div id="ntrip-error-log" class="ntrip-error-log"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="messages-actions">
+          <div class="br-action-left">
+            <span id="ntrip-status-text" class="messages-status">Ready</span>
+          </div>
+          <div class="messages-action-buttons">
+            <button id="ntrip-btn-connect" class="btn-primary btn-sm" title="Connect to NTRIP caster">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+              Connect
+            </button>
+            <button id="ntrip-btn-disconnect" class="btn-danger btn-sm" title="Disconnect" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+              </svg>
+              Disconnect
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Connection Dialog (Modal) -->
+  <div id="connect-dialog" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Connect to Device</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Connection Type Tabs -->
+        <div class="conn-tabs">
+          <button class="conn-tab active" data-conn="serial">Serial</button>
+          <button class="conn-tab" data-conn="tcp">TCP</button>
+          <button class="conn-tab" data-conn="udp">UDP</button>
+        </div>
+
+        <!-- Serial -->
+        <div class="conn-panel active" id="panel-serial">
+          <div class="form-group">
+            <label>Port</label>
+            <div class="port-row">
+              <select id="serial-port" class="form-control"></select>
+              <button id="btn-refresh-ports" class="btn-sm" title="Refresh">&#x21bb;</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Baud Rate</label>
+            <select id="serial-baud" class="form-control">
+              <option value="9600">9600</option>
+              <option value="19200">19200</option>
+              <option value="38400">38400</option>
+              <option value="57600">57600</option>
+              <option value="115200" selected>115200</option>
+              <option value="230400">230400</option>
+              <option value="460800">460800</option>
+              <option value="921600">921600</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TCP -->
+        <div class="conn-panel" id="panel-tcp">
+          <div class="form-group">
+            <label>Host</label>
+            <input type="text" id="tcp-host" class="form-control" value="192.168.1.1" placeholder="IP address">
+          </div>
+          <div class="form-group">
+            <label>Port</label>
+            <input type="number" id="tcp-port" class="form-control" value="3001" placeholder="Port">
+          </div>
+        </div>
+
+        <!-- UDP -->
+        <div class="conn-panel" id="panel-udp">
+          <div class="form-group">
+            <label>Listen Port</label>
+            <input type="number" id="udp-listen-port" class="form-control" value="3002" placeholder="Local port">
+          </div>
+          <div class="form-group">
+            <label>Remote Host (optional)</label>
+            <input type="text" id="udp-remote-host" class="form-control" placeholder="IP for sending commands">
+          </div>
+          <div class="form-group">
+            <label>Remote Port (optional)</label>
+            <input type="number" id="udp-remote-port" class="form-control" placeholder="Port for sending commands">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-connect">Cancel</button>
+        <button class="btn-primary" id="btn-do-connect">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Components -->
+  <script src="components/SourceSelector.js"></script>
+  <script src="components/Sidebar.js"></script>
+  <script src="components/Terminal.js"></script>
+  <script src="components/ConnectionDialog.js"></script>
+  <script src="components/PositionCard.js"></script>
+  <script src="components/SatelliteCard.js"></script>
+  <script src="components/VelocityCard.js"></script>
+  <script src="components/ImuCard.js"></script>
+  <script src="components/SolutionStatusCard.js"></script>
+  <script src="components/MessagesSettings.js"></script>
+  <script src="components/HeadingSettings.js"></script>
+  <script src="components/BaseRoverSettings.js"></script>
+  <script src="components/EthernetSettings.js"></script>
+  <script src="components/InsSettings.js"></script>
+  <script src="components/NtripClient.js"></script>
+  <script src="components/RtkCard.js"></script>
+  <script src="components/UpdatePanel.js"></script>
+  <script src="components/Dashboard.js"></script>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1866 @@
+{
+  "_meta": {
+    "version": "2.0",
+    "notes": "UG017 logs with ASCII-style blocks; indices start after standard header.",
+    "split": {
+      "data_sep": ",",
+      "checksum_sep": "*"
+    },
+    "converters": {
+      "lat_dm": "ddmm.mmmm → deg",
+      "lon_dm": "dddmm.mmmm → deg",
+      "time_hms": "hhmmss[.ss]"
+    }
+  },
+  "ATR": {
+    "label": "Navigation information like positioning and heading",
+    "description": "Navigation information (position + heading)",
+    "ascii": {
+      "tag": "ATR",
+      "log_command": "gpatr",
+      "description": "Navigation information like positioning and heading",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPATR",
+        "ATR"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC"
+        },
+        {
+          "index": 2,
+          "name": "pos_status",
+          "type": "int",
+          "unit": "",
+          "note": "Positioning status (a0); see note: 0=no solution, 1=single point, 2=pseudorange diff, 4=fixed, 5=float."
+        },
+        {
+          "index": 3,
+          "name": "baseline_len_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Baseline length (x1)."
+        },
+        {
+          "index": 4,
+          "name": "north_m",
+          "type": "float",
+          "unit": "m",
+          "note": "North distance (x2)."
+        },
+        {
+          "index": 5,
+          "name": "east_m",
+          "type": "float",
+          "unit": "m",
+          "note": "East distance (x3)."
+        },
+        {
+          "index": 6,
+          "name": "up_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Up distance (x4)."
+        },
+        {
+          "index": 7,
+          "name": "head_status",
+          "type": "int",
+          "unit": "",
+          "note": "Heading status (a1); same codes as positioning status (0/1/2/4/5)."
+        },
+        {
+          "index": 8,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw (x5)."
+        },
+        {
+          "index": 9,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch (x6)."
+        },
+        {
+          "index": 10,
+          "name": "reserved",
+          "type": "str",
+          "unit": ""
+        },
+        {
+          "index": 11,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "Position/heading status codes: 0=no solution; 1=single point; 2=pseudorange differential; 4=fixed; 5=float."
+      ],
+      "name": "Navigation information (position + heading)"
+    }
+  },
+  "DOP": {
+    "label": "Dilution of Precision",
+    "description": "Dilution of Precision",
+    "ascii": {
+      "tag": "DOP",
+      "log_command": "gpdop",
+      "description": "Dilution of Precision",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPDOP",
+        "DOP"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "pdop",
+          "type": "float",
+          "note": "PDOP: Position Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 3,
+          "name": "hdop",
+          "type": "float",
+          "note": "HDOP: Horizontal Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 4,
+          "name": "vdop",
+          "type": "float",
+          "note": "VDOP: Vertical Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 5,
+          "name": "tdop",
+          "type": "float",
+          "note": "TDOP: Time Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 6,
+          "name": "gdop",
+          "type": "float",
+          "note": "GDOP: Geometric Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 7,
+          "name": "checksum",
+          "type": "str",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "name": "Dilution of Precision"
+    }
+  },
+  "FPD": {
+    "label": "Position and attitude information",
+    "description": "Position and Attitude Information",
+    "ascii": {
+      "tag": "FPD",
+      "log_command": "gpfpd",
+      "description": "Position and attitude information",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPFPD",
+        "FPD"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "gps_week",
+          "type": "int",
+          "note": "GPS week since 6 Jan 1980."
+        },
+        {
+          "index": 2,
+          "name": "sow_s",
+          "type": "float",
+          "unit": "s",
+          "note": "Seconds of week from Sunday 00:00:00."
+        },
+        {
+          "index": 3,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg (0–360)",
+          "note": "Yaw 0°~360°."
+        },
+        {
+          "index": 4,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg (-90–90)",
+          "note": "Pitch -90°~+90°."
+        },
+        {
+          "index": 5,
+          "name": "roll_deg",
+          "type": "float",
+          "unit": "deg (-180–180)",
+          "note": "Roll -180°~+180°."
+        },
+        {
+          "index": 6,
+          "name": "lat_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Latitude -90°~+90°."
+        },
+        {
+          "index": 7,
+          "name": "lon_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Longitude -180°~+180°."
+        },
+        {
+          "index": 8,
+          "name": "height_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Height (m)."
+        },
+        {
+          "index": 9,
+          "name": "vel_east_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "East velocity (m/s)."
+        },
+        {
+          "index": 10,
+          "name": "vel_north_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "North velocity (m/s)."
+        },
+        {
+          "index": 11,
+          "name": "vel_up_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "Up velocity (m/s)."
+        },
+        {
+          "index": 12,
+          "name": "baseline_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Baseline length (m)."
+        },
+        {
+          "index": 13,
+          "name": "sats_ant1",
+          "type": "int",
+          "note": "Number of satellites for antenna 1."
+        },
+        {
+          "index": 14,
+          "name": "sats_ant2",
+          "type": "int",
+          "note": "Number of satellites for antenna 2."
+        },
+        {
+          "index": 15,
+          "name": "sol_status",
+          "type": "int",
+          "note": "Solution status; see note①."
+        },
+        {
+          "index": 16,
+          "name": "checksum",
+          "type": "str",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "Solution status (note①): 0=Initialization; 1=GPS pos/vel/heading valid; 2=GPS pos & vel valid; 3=Pure inertial; 11=GPS differential vel & heading valid; 12=GPS differential valid."
+      ],
+      "name": "Position and Attitude Information"
+    }
+  },
+  "GGA": {
+    "label": "GPS Fix Data",
+    "description": "GPS Fix Data",
+    "ascii": {
+      "tag": "GGA",
+      "log_command": "gpgga",
+      "description": "GPS Fix Data",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGGA",
+        "$GNGGA",
+        "GGA"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "lat_dm",
+          "type": "lat_dm",
+          "unit": "deg",
+          "note": "Latitude ddmm.mmmm; note① (0–90°, 2 integer digits reserved)."
+        },
+        {
+          "index": 3,
+          "name": "ns",
+          "type": "hemi_ns",
+          "unit": "",
+          "note": "Latitude direction (N=North, S=South)."
+        },
+        {
+          "index": 4,
+          "name": "lon_dm",
+          "type": "lon_dm",
+          "unit": "deg",
+          "note": "Longitude dddmm.mmmm; note② (0–180°, 3 integer digits reserved)."
+        },
+        {
+          "index": 5,
+          "name": "ew",
+          "type": "hemi_ew",
+          "unit": "",
+          "note": "Longitude direction (E=East, W=West)."
+        },
+        {
+          "index": 6,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note③ (0=invalid;1=single;2=pseudorange diff;4=fixed;5=float)."
+        },
+        {
+          "index": 7,
+          "name": "num_sats",
+          "type": "int",
+          "unit": "count",
+          "note": "Satellites in use (xx)."
+        },
+        {
+          "index": 8,
+          "name": "hdop",
+          "type": "float",
+          "unit": "",
+          "note": "HDOP (x.x)."
+        },
+        {
+          "index": 9,
+          "name": "alt_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Antenna altitude above/below mean sea level (x.x)."
+        },
+        {
+          "index": 10,
+          "name": "alt_unit",
+          "type": "str",
+          "unit": "",
+          "note": "Antenna altitude unit (M)."
+        },
+        {
+          "index": 11,
+          "name": "undulation",
+          "type": "float",
+          "unit": "m",
+          "note": "Geoid-ellipsoid separation (x.x)."
+        },
+        {
+          "index": 12,
+          "name": "und_unit",
+          "type": "str",
+          "unit": "",
+          "note": "Undulation unit (M)."
+        },
+        {
+          "index": 13,
+          "name": "diff_age_s",
+          "type": "float",
+          "unit": "s",
+          "note": "Differential age (s); note④."
+        },
+        {
+          "index": 14,
+          "name": "diff_base_id",
+          "type": "str",
+          "unit": "",
+          "note": "Differential base station ID; note⑤ (0000 when single; base ID in RTK)."
+        },
+        {
+          "index": 15,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Latitude ddmm.mmmm; 0-90 degrees, 2 integer digits reserved.",
+        "2 Longitude dddmm.mmmm; 0-180 degrees, 3 integer digits reserved.",
+        "3 Solution status: 0=invalid; 1=single; 2=pseudorange diff; 4=fixed; 5=float.",
+        "4 Differential age (s): last differential signal age.",
+        "5 Differential base station ID: '0000' in single mode; base ID in RTK mode."
+      ],
+      "name": "GPS Fix Data"
+    }
+  },
+  "GSA": {
+    "label": "GPS DOP and Active Satellites",
+    "description": "GNSS DOP and Active Satellites",
+    "ascii": {
+      "tag": "GSA",
+      "log_command": "gpgsa",
+      "description": "GPS DOP and Active Satellites",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGSA",
+        "$GNGSA",
+        "GSA"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "mode_sel",
+          "type": "str",
+          "unit": "",
+          "note": "Fix selection mode; A=Automatic 2D/3D, M=Manual forced 2D/3D."
+        },
+        {
+          "index": 2,
+          "name": "mode",
+          "type": "int",
+          "unit": "",
+          "note": "Fix type; 1=No fix, 2=2D, 3=3D."
+        },
+        {
+          "index": 3,
+          "name": "sv1",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 1 of 12)."
+        },
+        {
+          "index": 4,
+          "name": "sv2",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 2 of 12)."
+        },
+        {
+          "index": 5,
+          "name": "sv3",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 3 of 12)."
+        },
+        {
+          "index": 6,
+          "name": "sv4",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 4 of 12)."
+        },
+        {
+          "index": 7,
+          "name": "sv5",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 5 of 12)."
+        },
+        {
+          "index": 8,
+          "name": "sv6",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 6 of 12)."
+        },
+        {
+          "index": 9,
+          "name": "sv7",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 7 of 12)."
+        },
+        {
+          "index": 10,
+          "name": "sv8",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 8 of 12)."
+        },
+        {
+          "index": 11,
+          "name": "sv9",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 9 of 12)."
+        },
+        {
+          "index": 12,
+          "name": "sv10",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 10 of 12)."
+        },
+        {
+          "index": 13,
+          "name": "sv11",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 11 of 12)."
+        },
+        {
+          "index": 14,
+          "name": "sv12",
+          "type": "str",
+          "unit": "",
+          "note": "PRN used in solution (slot 12 of 12)."
+        },
+        {
+          "index": 15,
+          "name": "pdop",
+          "type": "float",
+          "unit": "",
+          "note": "PDOP (x.x)."
+        },
+        {
+          "index": 16,
+          "name": "hdop",
+          "type": "float",
+          "unit": "",
+          "note": "HDOP (x.x)."
+        },
+        {
+          "index": 17,
+          "name": "vdop",
+          "type": "float",
+          "unit": "",
+          "note": "VDOP (x.x)."
+        },
+        {
+          "index": 18,
+          "name": "gnss_id",
+          "type": "int",
+          "unit": "",
+          "note": "GNSS ID; note② (1=GPS,2=GLONASS,3=Galileo,4=BDS,5=QZSS,6=IRNSS,7+=Reserved)."
+        },
+        {
+          "index": 19,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        },
+        {
+          "index": 20,
+          "name": "terminator",
+          "type": "str",
+          "unit": "",
+          "note": "Sentence terminator [CR][LF]."
+        }
+      ],
+      "notes": [
+        "1 Header varies by constellation: GP for GPS only, GN when multiple constellations are involved (see NMEA 0183 v4.11).",
+        "2 GNSS ID: 1=GPS(GP), 2=GLONASS(GL), 3=Galileo(GA), 4=BDS(GB), 5=QZSS(GQ), 6=IRNSS(GI); 7+=Reserved."
+      ],
+      "name": "GNSS DOP and Active Satellites"
+    }
+  },
+  "GST": {
+    "label": "GPS Pseudorange Error Statistics",
+    "description": "Pseudorange Error Statistics",
+    "ascii": {
+      "tag": "GST",
+      "log_command": "gpgst",
+      "description": "GPS Pseudorange Error Statistics",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGST",
+        "$GNGST",
+        "GST"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss; hours/minutes/seconds)."
+        },
+        {
+          "index": 2,
+          "name": "rms",
+          "type": "float",
+          "unit": "m",
+          "note": "RMS value: std dev of pseudorange to navigation process."
+        },
+        {
+          "index": 3,
+          "name": "sigma_maj",
+          "type": "float",
+          "unit": "m",
+          "note": "Std dev of semi-major axis of error ellipse (m)."
+        },
+        {
+          "index": 4,
+          "name": "sigma_min",
+          "type": "float",
+          "unit": "m",
+          "note": "Std dev of semi-minor axis of error ellipse (m)."
+        },
+        {
+          "index": 5,
+          "name": "orient_deg",
+          "type": "float",
+          "unit": "deg from true north",
+          "note": "Orientation of semi-major axis of error ellipse (deg from true north)."
+        },
+        {
+          "index": 6,
+          "name": "sigma_lat",
+          "type": "float",
+          "unit": "m",
+          "note": "Std dev of latitude error (m)."
+        },
+        {
+          "index": 7,
+          "name": "sigma_lon",
+          "type": "float",
+          "unit": "m",
+          "note": "Std dev of longitude error (m)."
+        },
+        {
+          "index": 8,
+          "name": "sigma_alt",
+          "type": "float",
+          "unit": "m",
+          "note": "Std dev of altitude error (m)."
+        },
+        {
+          "index": 9,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "Outputs pseudorange noise/position error ellipsoid standard deviations."
+      ],
+      "name": "Pseudorange Error Statistics"
+    }
+  },
+  "GSV": {
+    "label": "GPS Satellites in View",
+    "description": "Satellites in View",
+    "ascii": {
+      "tag": "GSV",
+      "log_command": "gpgsv",
+      "description": "GPS Satellites in View",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGSV",
+        "$GNGSV",
+        "GSV"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "num_msgs",
+          "type": "int",
+          "unit": "count",
+          "note": "Total number of GSV messages in this set (x.x)."
+        },
+        {
+          "index": 2,
+          "name": "msg_num",
+          "type": "int",
+          "unit": "count",
+          "note": "Current GSV message number (x.x)."
+        },
+        {
+          "index": 3,
+          "name": "num_sats",
+          "type": "int",
+          "unit": "count",
+          "note": "Number of satellites in view (xx)."
+        },
+        {
+          "index": 4,
+          "name": "sv_prn_1",
+          "type": "str",
+          "unit": "",
+          "note": "Satellite PRN number (slot 1 of up to 4 per message)."
+        },
+        {
+          "index": 5,
+          "name": "elev_1",
+          "type": "int",
+          "unit": "deg",
+          "note": "Elevation (deg), max 90."
+        },
+        {
+          "index": 6,
+          "name": "az_1",
+          "type": "int",
+          "unit": "deg",
+          "note": "Azimuth (deg true), 000–359."
+        },
+        {
+          "index": 7,
+          "name": "cn0_1",
+          "type": "int",
+          "unit": "dB-Hz",
+          "note": "SNR / C/N0 (dB-Hz)."
+        },
+        {
+          "index": 8,
+          "name": "sv_prn_2",
+          "type": "str",
+          "unit": "",
+          "note": "Satellite PRN number (slot 2 of up to 4)."
+        },
+        {
+          "index": 9,
+          "name": "elev_2",
+          "type": "int",
+          "unit": "deg",
+          "note": "Elevation (deg), max 90."
+        },
+        {
+          "index": 10,
+          "name": "az_2",
+          "type": "int",
+          "unit": "deg",
+          "note": "Azimuth (deg true), 000–359."
+        },
+        {
+          "index": 11,
+          "name": "cn0_2",
+          "type": "int",
+          "unit": "dB-Hz",
+          "note": "SNR / C/N0 (dB-Hz)."
+        },
+        {
+          "index": 12,
+          "name": "sv_prn_3",
+          "type": "str",
+          "unit": "",
+          "note": "Satellite PRN number (slot 3 of up to 4)."
+        },
+        {
+          "index": 13,
+          "name": "elev_3",
+          "type": "int",
+          "unit": "deg",
+          "note": "Elevation (deg), max 90."
+        },
+        {
+          "index": 14,
+          "name": "az_3",
+          "type": "int",
+          "unit": "deg",
+          "note": "Azimuth (deg true), 000–359."
+        },
+        {
+          "index": 15,
+          "name": "cn0_3",
+          "type": "int",
+          "unit": "dB-Hz",
+          "note": "SNR / C/N0 (dB-Hz)."
+        },
+        {
+          "index": 16,
+          "name": "sv_prn_4",
+          "type": "str",
+          "unit": "",
+          "note": "Satellite PRN number (slot 4 of up to 4)."
+        },
+        {
+          "index": 17,
+          "name": "elev_4",
+          "type": "int",
+          "unit": "deg",
+          "note": "Elevation (deg), max 90."
+        },
+        {
+          "index": 18,
+          "name": "az_4",
+          "type": "int",
+          "unit": "deg",
+          "note": "Azimuth (deg true), 000–359."
+        },
+        {
+          "index": 19,
+          "name": "cn0_4",
+          "type": "int",
+          "unit": "dB-Hz",
+          "note": "SNR / C/N0 (dB-Hz)."
+        },
+        {
+          "index": 20,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Each GSV sentence carries up to 4 satellites; remaining slots are ',,,' if fewer than 4.",
+        "2 Read all 1..num_msgs sentences to cover all satellites."
+      ],
+      "name": "Satellites in View"
+    }
+  },
+  "HDT": {
+    "label": "Heading True",
+    "description": "Heading True",
+    "ascii": {
+      "tag": "HDT",
+      "log_command": "gphdt",
+      "description": "Heading True",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPHDT",
+        "$GNHDT",
+        "HDT"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "heading_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Heading in degrees (x.x)."
+        },
+        {
+          "index": 2,
+          "name": "ref",
+          "type": "str",
+          "unit": "",
+          "note": "Constant 'T' (True)."
+        },
+        {
+          "index": 3,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "name": "Heading True"
+    }
+  },
+  "HPD": {
+    "label": "GPS Positioning and Heading",
+    "description": "GPS Positioning and Heading (extended)",
+    "ascii": {
+      "tag": "HPD",
+      "log_command": "gphpd",
+      "description": "GPS Positioning and Heading",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPHPD",
+        "HPD"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "gps_week",
+          "type": "int",
+          "unit": "",
+          "note": "GPS week number since Jan 6, 1980 (GPS time)."
+        },
+        {
+          "index": 2,
+          "name": "sow_s",
+          "type": "float",
+          "unit": "s",
+          "note": "Seconds of week from Sunday 00:00:00 (xxxxx.xx)."
+        },
+        {
+          "index": 3,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw 0°~360°."
+        },
+        {
+          "index": 4,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch -90°~+90°."
+        },
+        {
+          "index": 5,
+          "name": "ground_vel_angle_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Angle of ground velocity from True North (0–359.99°)."
+        },
+        {
+          "index": 6,
+          "name": "lat_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Latitude (°)."
+        },
+        {
+          "index": 7,
+          "name": "lon_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Longitude (°)."
+        },
+        {
+          "index": 8,
+          "name": "height_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Height (m)."
+        },
+        {
+          "index": 9,
+          "name": "east_dist_m",
+          "type": "float",
+          "unit": "m",
+          "note": "East distance rover→base (m)."
+        },
+        {
+          "index": 10,
+          "name": "north_dist_m",
+          "type": "float",
+          "unit": "m",
+          "note": "North distance rover→base (m)."
+        },
+        {
+          "index": 11,
+          "name": "up_dist_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Up distance rover→base (m)."
+        },
+        {
+          "index": 12,
+          "name": "vel_east_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "East velocity (m/s)."
+        },
+        {
+          "index": 13,
+          "name": "vel_north_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "North velocity (m/s)."
+        },
+        {
+          "index": 14,
+          "name": "vel_up_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "Up velocity (m/s)."
+        },
+        {
+          "index": 15,
+          "name": "vel_east_diff_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "East velocity difference between two measurements (m/s)."
+        },
+        {
+          "index": 16,
+          "name": "vel_north_diff_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "North velocity difference between two measurements (m/s)."
+        },
+        {
+          "index": 17,
+          "name": "vel_up_diff_ms",
+          "type": "float",
+          "unit": "m/s",
+          "note": "Up velocity difference between two measurements (m/s)."
+        },
+        {
+          "index": 18,
+          "name": "baseline_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Baseline length (m)."
+        },
+        {
+          "index": 19,
+          "name": "sats_secondary",
+          "type": "int",
+          "unit": "count",
+          "note": "Satellites from secondary antenna (xx)."
+        },
+        {
+          "index": 20,
+          "name": "sats_primary",
+          "type": "int",
+          "unit": "count",
+          "note": "Satellites from primary antenna (xx)."
+        },
+        {
+          "index": 21,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note① (0=invalid;1=single;2=pseudorange diff;4=RTK fixed;5=RTK float)."
+        },
+        {
+          "index": 22,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single; 2=pseudorange differential; 4=RTK fixed; 5=RTK float."
+      ],
+      "name": "GPS Positioning and Heading (extended)"
+    }
+  },
+  "NTR": {
+    "label": "Distance between rover and base station",
+    "description": "Distance between rover and base",
+    "ascii": {
+      "tag": "NTR",
+      "log_command": "gpntr",
+      "description": "Distance between rover and base station",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPNTR",
+        "NTR"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; see note① (0=invalid;1=single;2=pseudorange diff;4=fixed;5=float)."
+        },
+        {
+          "index": 3,
+          "name": "oblique_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Oblique distance rover–base (m)."
+        },
+        {
+          "index": 4,
+          "name": "dx_m",
+          "type": "float",
+          "unit": "m",
+          "note": "X distance (m); +north of base, -south of base."
+        },
+        {
+          "index": 5,
+          "name": "dy_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Y distance (m); +east of base, -west of base."
+        },
+        {
+          "index": 6,
+          "name": "dh_m",
+          "type": "float",
+          "unit": "m",
+          "note": "H distance (m); +above base, -below base."
+        },
+        {
+          "index": 7,
+          "name": "station_id",
+          "type": "str",
+          "unit": "",
+          "note": "Station ID."
+        },
+        {
+          "index": 8,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single point; 2=pseudorange differential; 4=fixed; 5=float.",
+        "2 Signs: X: +north/-south, Y: +east/-west, H: +above/-below base."
+      ],
+      "name": "Distance between rover and base"
+    }
+  },
+  "ORI": {
+    "label": "Orientation",
+    "description": "Heading information",
+    "ascii": {
+      "tag": "ORI",
+      "log_command": "gpori",
+      "description": "Orientation",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPORI",
+        "ORI"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; see note① (0=invalid;1=single;2=pseudorange diff;4=fixed;5=float)."
+        },
+        {
+          "index": 3,
+          "name": "baseline_len_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Baseline length (m)."
+        },
+        {
+          "index": 4,
+          "name": "azimuth_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Azimuth (deg)."
+        },
+        {
+          "index": 5,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch (deg)."
+        },
+        {
+          "index": 6,
+          "name": "x_baseline_m",
+          "type": "float",
+          "unit": "m",
+          "note": "X of baseline vector (m); reserved."
+        },
+        {
+          "index": 7,
+          "name": "y_baseline_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Y of baseline vector (m); reserved."
+        },
+        {
+          "index": 8,
+          "name": "z_baseline_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Z of baseline vector (m); reserved."
+        },
+        {
+          "index": 9,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single point; 2=pseudorange differential; 4=fixed; 5=float."
+      ],
+      "name": "Heading information"
+    }
+  },
+  "PASHR": {
+    "label": "Proprietary Attitude",
+    "description": "Proprietary Attitude",
+    "ascii": {
+      "tag": "PASHR",
+      "log_command": "pashr",
+      "description": "Proprietary Attitude",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$PASHR",
+        "PASHR"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw (deg)."
+        },
+        {
+          "index": 3,
+          "name": "true_mark",
+          "type": "str",
+          "unit": "",
+          "note": "Constant 'T' (True North mark)."
+        },
+        {
+          "index": 4,
+          "name": "roll_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Roll (deg)."
+        },
+        {
+          "index": 5,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch (deg)."
+        },
+        {
+          "index": 6,
+          "name": "heave_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Heave (m); only available when SETINSPROFILE=MARI NE and INS aligned; otherwise fixed at 0."
+        },
+        {
+          "index": 7,
+          "name": "roll_std",
+          "type": "float",
+          "unit": "deg",
+          "note": "Roll standard deviation (deg)."
+        },
+        {
+          "index": 8,
+          "name": "pitch_std",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch standard deviation (deg)."
+        },
+        {
+          "index": 9,
+          "name": "yaw_std",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw standard deviation (deg)."
+        },
+        {
+          "index": 10,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note① (0=invalid;1=single;2=RTK)."
+        },
+        {
+          "index": 11,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single point; 2=RTK solution."
+      ],
+      "name": "Proprietary Attitude"
+    }
+  },
+  "PTNL_AVR": {
+    "label": "Yaw information",
+    "description": "Yaw information",
+    "ascii": {
+      "tag": "PTNL_AVR",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$PTNL,AVR",
+        "PTNL_AVR"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw (deg)."
+        },
+        {
+          "index": 3,
+          "name": "yaw_mark",
+          "type": "str",
+          "unit": "",
+          "note": "Literal 'Yaw' mark."
+        },
+        {
+          "index": 4,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch (deg)."
+        },
+        {
+          "index": 5,
+          "name": "pitch_mark",
+          "type": "str",
+          "unit": "",
+          "note": "Literal 'Tilt' mark."
+        },
+        {
+          "index": 6,
+          "name": "reserved1",
+          "type": "str",
+          "unit": "",
+          "note": "Reserved."
+        },
+        {
+          "index": 7,
+          "name": "reserved2",
+          "type": "str",
+          "unit": "",
+          "note": "Reserved."
+        },
+        {
+          "index": 8,
+          "name": "baseline_len_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Baseline length (m)."
+        },
+        {
+          "index": 9,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note① (0=invalid;1=single;2=RTK float;3=RTK fixed;4=pseudorange diff)."
+        },
+        {
+          "index": 10,
+          "name": "pdop",
+          "type": "float",
+          "unit": "",
+          "note": "PDOP: Position Dilution of Precision (xx.xx)."
+        },
+        {
+          "index": 11,
+          "name": "num_sats",
+          "type": "int",
+          "unit": "count",
+          "note": "Number of satellites used in solution (xx)."
+        },
+        {
+          "index": 12,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single point; 2=RTK float; 3=RTK fixed; 4=pseudorange differential."
+      ],
+      "name": "Yaw information",
+      "log_command": "ptnl_avr"
+    }
+  },
+  "PTNL_PJK": {
+    "label": "PJK coordinates (third-party software facilitation)",
+    "description": "PJK coordinates (third-party software facilitation)",
+    "ascii": {
+      "tag": "PTNL_PJK",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$PTNL,PJK",
+        "PTNL_PJK"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "date_mdy",
+          "type": "str",
+          "unit": "",
+          "note": "Date (mmddyy)."
+        },
+        {
+          "index": 3,
+          "name": "x_m",
+          "type": "float",
+          "unit": "m",
+          "note": "X axis (m)."
+        },
+        {
+          "index": 4,
+          "name": "x_dir",
+          "type": "str",
+          "unit": "",
+          "note": "X axis direction (N/S)."
+        },
+        {
+          "index": 5,
+          "name": "y_m",
+          "type": "float",
+          "unit": "m",
+          "note": "Y axis (m)."
+        },
+        {
+          "index": 6,
+          "name": "y_dir",
+          "type": "str",
+          "unit": "",
+          "note": "Y axis direction (E/W)."
+        },
+        {
+          "index": 7,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note① (0=invalid;1=single;2=pseudorange diff;3=fixed;4=float)."
+        },
+        {
+          "index": 8,
+          "name": "num_sats",
+          "type": "int",
+          "unit": "count",
+          "note": "Number of satellites used in solution (xx)."
+        },
+        {
+          "index": 9,
+          "name": "hdop",
+          "type": "float",
+          "unit": "",
+          "note": "HDOP (xx.xx)."
+        },
+        {
+          "index": 10,
+          "name": "height_tag",
+          "type": "str",
+          "unit": "",
+          "note": "Height tag/value (EHT+/GHT+ form); EHT=Earth Height, GHT=Height above sea level."
+        },
+        {
+          "index": 11,
+          "name": "unit_m",
+          "type": "str",
+          "unit": "",
+          "note": "Unit (m)."
+        },
+        {
+          "index": 12,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single point; 2=pseudorange differential; 3=fixed; 4=float."
+      ],
+      "name": "PJK coordinates (third-party software facilitation)",
+      "log_command": "ptnl_pjk"
+    }
+  },
+  "RMC": {
+    "label": "Recommended Minimum",
+    "description": "Recommended Minimum",
+    "ascii": {
+      "tag": "RMC",
+      "log_command": "gprmc",
+      "description": "Recommended Minimum",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPRMC",
+        "$GNRMC",
+        "RMC"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "pos_status",
+          "type": "str",
+          "unit": "",
+          "note": "Position status: A=valid, V=invalid."
+        },
+        {
+          "index": 3,
+          "name": "lat_dm",
+          "type": "lat_dm",
+          "unit": "deg",
+          "note": "Latitude (ddff.ff); note① (0–90°, 2 digits reserved before decimal)."
+        },
+        {
+          "index": 4,
+          "name": "ns",
+          "type": "hemi_ns",
+          "unit": "",
+          "note": "Latitude direction (N=North, S=South)."
+        },
+        {
+          "index": 5,
+          "name": "lon_dm",
+          "type": "lon_dm",
+          "unit": "deg",
+          "note": "Longitude (dddff.ff); note② (0–180°, 3 digits reserved before decimal)."
+        },
+        {
+          "index": 6,
+          "name": "ew",
+          "type": "hemi_ew",
+          "unit": "",
+          "note": "Longitude direction (E=East, W=West)."
+        },
+        {
+          "index": 7,
+          "name": "sog_knots",
+          "type": "float",
+          "unit": "kn",
+          "note": "Speed over ground (knots)."
+        },
+        {
+          "index": 8,
+          "name": "cog_true",
+          "type": "float",
+          "unit": "deg",
+          "note": "Track made good (deg True) heading from True North."
+        },
+        {
+          "index": 9,
+          "name": "date_dmy",
+          "type": "str",
+          "unit": "",
+          "note": "Date (ddmmyy)."
+        },
+        {
+          "index": 10,
+          "name": "mag_var",
+          "type": "float",
+          "unit": "deg",
+          "note": "Magnetic variation (deg)."
+        },
+        {
+          "index": 11,
+          "name": "mag_dir",
+          "type": "str",
+          "unit": "",
+          "note": "Magnetic variation direction (E/W)."
+        },
+        {
+          "index": 12,
+          "name": "mode_ind",
+          "type": "str",
+          "unit": "",
+          "note": "Positioning mode indicator; note③ (A=Autonomous, D=Differential, E=Estimated, M=Manual, N=Invalid)."
+        },
+        {
+          "index": 13,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Latitude: 0–90°, 2 integer digits reserved before decimal.",
+        "2 Longitude: 0–180°, 3 integer digits reserved before decimal.",
+        "3 Positioning mode indicator: A=Autonomous; D=Differential; E=Estimated (DR); M=Manual; N=Invalid."
+      ],
+      "name": "Recommended Minimum"
+    }
+  },
+  "TRA": {
+    "label": "Yaw, Pitch and Roll",
+    "description": "Yaw, Pitch and Roll",
+    "ascii": {
+      "tag": "TRA",
+      "log_command": "gptra",
+      "description": "Yaw, Pitch and Roll",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPTRA",
+        "TRA"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "yaw_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Yaw (deg)."
+        },
+        {
+          "index": 3,
+          "name": "pitch_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Pitch (deg)."
+        },
+        {
+          "index": 4,
+          "name": "roll_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Roll (deg)."
+        },
+        {
+          "index": 5,
+          "name": "sol_status",
+          "type": "int",
+          "unit": "",
+          "note": "Solution status; note① (0=invalid;1=single;2=pseudorange diff;4=fixed;5=float)."
+        },
+        {
+          "index": 6,
+          "name": "num_sats",
+          "type": "int",
+          "unit": "count",
+          "note": "Satellites used in solution (xx)."
+        },
+        {
+          "index": 7,
+          "name": "diff_age_s",
+          "type": "float",
+          "unit": "s",
+          "note": "Differential age (s)."
+        },
+        {
+          "index": 8,
+          "name": "station_id",
+          "type": "str",
+          "unit": "",
+          "note": "Station ID (xxxx)."
+        },
+        {
+          "index": 9,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Solution status: 0=invalid; 1=single; 2=pseudorange differential; 4=fixed; 5=float."
+      ],
+      "name": "Yaw, Pitch and Roll"
+    }
+  },
+  "VTG": {
+    "label": "Track Made Good and Ground Speed",
+    "description": "Track made good and ground speed",
+    "ascii": {
+      "tag": "VTG",
+      "log_command": "gpvtg",
+      "description": "Track Made Good and Ground Speed",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPVTG",
+        "$GNVTG",
+        "VTG"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "track_true_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Track made good, degrees True (000–359)."
+        },
+        {
+          "index": 2,
+          "name": "true_mark",
+          "type": "str",
+          "unit": "",
+          "note": "T (True)."
+        },
+        {
+          "index": 3,
+          "name": "track_mag_deg",
+          "type": "float",
+          "unit": "deg",
+          "note": "Track made good, degrees Magnetic (000–359)."
+        },
+        {
+          "index": 4,
+          "name": "mag_mark",
+          "type": "str",
+          "unit": "",
+          "note": "M (Magnetic)."
+        },
+        {
+          "index": 5,
+          "name": "sog_knots",
+          "type": "float",
+          "unit": "kn",
+          "note": "Speed over ground (knots), 000–999."
+        },
+        {
+          "index": 6,
+          "name": "knots_mark",
+          "type": "str",
+          "unit": "",
+          "note": "N (knots)."
+        },
+        {
+          "index": 7,
+          "name": "sog_kmh",
+          "type": "float",
+          "unit": "km/h",
+          "note": "Speed over ground (km/h), 000–999."
+        },
+        {
+          "index": 8,
+          "name": "kmh_mark",
+          "type": "str",
+          "unit": "",
+          "note": "K (km/h)."
+        },
+        {
+          "index": 9,
+          "name": "mode_ind",
+          "type": "str",
+          "unit": "",
+          "note": "Positioning mode indicator: A=autonomous; D=differential; E=estimated; M=manual; N=invalid."
+        },
+        {
+          "index": 10,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "name": "Track made good and ground speed"
+    }
+  },
+  "ZDA": {
+    "label": "UTC time, date and local time zone",
+    "description": "UTC time, date and local time zone",
+    "ascii": {
+      "tag": "ZDA",
+      "log_command": "gpzda",
+      "description": "UTC time, date and local time zone",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPZDA",
+        "$GNZDA",
+        "ZDA"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 2,
+          "name": "day",
+          "type": "int",
+          "unit": "",
+          "note": "Day (dd)."
+        },
+        {
+          "index": 3,
+          "name": "month",
+          "type": "int",
+          "unit": "",
+          "note": "Month (mm)."
+        },
+        {
+          "index": 4,
+          "name": "year",
+          "type": "int",
+          "unit": "",
+          "note": "Year (yyyy)."
+        },
+        {
+          "index": 5,
+          "name": "tz_hour",
+          "type": "int",
+          "unit": "hours",
+          "note": "Local time zone hour offset; note①."
+        },
+        {
+          "index": 6,
+          "name": "tz_minute",
+          "type": "int",
+          "unit": "minutes",
+          "note": "Local time zone minute offset; note①."
+        },
+        {
+          "index": 7,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "notes": [
+        "1 Since the device cannot automatically determine local time offset, examples assume 'Eastern Eight Zone'; offset is given as 0."
+      ],
+      "name": "UTC time, date and local time zone"
+    }
+  }
+}

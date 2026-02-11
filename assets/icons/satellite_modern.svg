@@ -1,0 +1,23 @@
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(-45 12 12)">
+    <!-- Central Body -->
+    <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/>
+    
+    <!-- Solar Panels (Left and Right Wings) -->
+    <path d="M2 10H8V14H2C1.44772 14 1 13.5523 1 13V11C1 10.4477 1.44772 10 2 10Z" fill="currentColor"/>
+    <path d="M16 10H22C22.5523 10 23 10.4477 23 11V13C23 13.5523 22.5523 14 22 14H16V10Z" fill="currentColor"/>
+    
+    <!-- Panel Grids (Negative Space for detail) -->
+    <rect x="3" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4"/>
+    <rect x="5.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4"/>
+    <rect x="16.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4"/>
+    <rect x="19" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4"/>
+    
+    <!-- Antenna/Dish Stem -->
+    <rect x="11" y="15" width="2" height="2" fill="currentColor"/>
+    
+    <!-- Dish (Semi-circle) -->
+    <path d="M8.5 17C8.5 17 9.5 19.5 12 19.5C14.5 19.5 15.5 17 15.5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="18" r="1" fill="currentColor"/>
+  </g>
+</svg>
