@@ -44,21 +44,21 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/swegeo_logo.png"
+      "icon": "assets/swegeo_logo.ico",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
       "perMachine": true,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/swegeo_logo.png",
-      "uninstallerIcon": "assets/swegeo_logo.png"
+      "installerIcon": "assets/swegeo_logo.ico",
+      "uninstallerIcon": "assets/swegeo_logo.ico"
     },
     "publish": {
       "provider": "github",
       "owner": "EgehanYaglici",
       "repo": "swegeo_gnss_app",
-      "private": true,
-      "token": "${GH_TOKEN}"
+      "private": true
     }
   }
 }
