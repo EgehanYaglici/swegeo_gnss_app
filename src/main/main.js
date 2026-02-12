@@ -120,9 +120,15 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Open DevTools in development
-  if (process.argv.includes('--enable-logging')) {
+  // DevTools only in dev mode, blocked in packaged builds
+  if (!app.isPackaged && process.argv.includes('--enable-logging')) {
     mainWindow.webContents.openDevTools();
+  }
+  if (app.isPackaged) {
+    mainWindow.webContents.on('before-input-event', (e, input) => {
+      if (input.key === 'I' && input.control && input.shift) e.preventDefault();
+      if (input.key === 'F12') e.preventDefault();
+    });
   }
 }
 
@@ -308,7 +314,6 @@ function setupIPC() {
 
 // --- Auto-Updater ---
 function setupAutoUpdater() {
-  // Only run in packaged builds (not during npm start / dev)
   if (!app.isPackaged) {
     console.log('[Updater] Skipping — app is not packaged');
     return;
@@ -317,20 +322,22 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  // Silent check — don't bother the user unless there's actually an update
   autoUpdater.on('checking-for-update', () => {
-    safeSend('updater:status', { status: 'checking' });
+    console.log('[Updater] Checking for updates...');
   });
 
   autoUpdater.on('update-available', (info) => {
     safeSend('updater:status', {
       status: 'available',
       version: info.version,
+      releaseNotes: info.releaseNotes || null,
       releaseDate: info.releaseDate
     });
   });
 
   autoUpdater.on('update-not-available', () => {
-    safeSend('updater:status', { status: 'up-to-date' });
+    console.log('[Updater] App is up to date');
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -349,17 +356,15 @@ function setupAutoUpdater() {
     });
   });
 
+  // Silent error — just log, don't show to user
   autoUpdater.on('error', (err) => {
-    safeSend('updater:status', {
-      status: 'error',
-      message: err?.message || 'Unknown update error'
-    });
+    console.log('[Updater] Error:', err?.message || 'Unknown');
   });
 
-  // Check for updates 3 seconds after launch
+  // Check for updates 5 seconds after launch
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch(() => { });
-  }, 3000);
+  }, 5000);
 }
 
 // App lifecycle
