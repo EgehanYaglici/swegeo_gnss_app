@@ -31,7 +31,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     frame: false, // Custom title bar
-    icon: path.join(__dirname, '..', '..', 'assets', 'swegeo_logo.png'),
+    icon: path.join(__dirname, '..', '..', 'assets', 'swegeo_logo.ico'),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,

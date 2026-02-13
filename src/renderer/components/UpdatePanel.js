@@ -60,20 +60,43 @@ class UpdatePanel {
         this._setLabel('Checking...', 'checking');
         this.btn.disabled = true;
 
+        // Timeout: 15 saniye içinde cevap gelmezse idle'a dön
+        const checkTimeout = setTimeout(() => {
+            if (this._state === 'checking') {
+                this._setLabel('Check for Updates', '');
+                this.btn.disabled = false;
+                this._state = 'idle';
+                this._checking = false;
+            }
+        }, 15000);
+
         try {
             const result = await api.checkForUpdate();
-            if (!result || !result.ok) {
-                this._state = 'uptodate';
-                this._setLabel('Up to date', 'uptodate');
-                this._scheduleRevert(3000);
+            // result.ok false ise (dev mode, hata vs) idle'a dön
+            if (result && !result.ok) {
+                if (this._state === 'checking') {
+                    this._setLabel('Check for Updates', '');
+                    this._state = 'idle';
+                }
+            } else {
+                // Güncelleme varsa _onStatus('available') event'i gelir, state değişir
+                // Yoksa burada "up to date" göster
+                if (this._state === 'checking') {
+                    this._state = 'uptodate';
+                    this._setLabel('Up to date ✓', 'uptodate');
+                    this._scheduleRevert(3000);
+                }
             }
         } catch {
-            this._setLabel('Check for Updates', '');
-            this._state = 'idle';
+            if (this._state === 'checking') {
+                this._setLabel('Check for Updates', '');
+                this._state = 'idle';
+            }
+        } finally {
+            clearTimeout(checkTimeout);
+            this.btn.disabled = (this._state === 'available' || this._state === 'downloading' || this._state === 'ready');
+            this._checking = false;
         }
-
-        this.btn.disabled = (this._state === 'available' || this._state === 'downloading' || this._state === 'ready');
-        this._checking = false;
     }
 
     _onStatus(data) {
