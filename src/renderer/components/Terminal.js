@@ -156,6 +156,12 @@ class Terminal {
         // Local echo with blue arrow
         this.appendLine(`-> ${cmd}`, '#3B82F6');
         this.input.value = '';
+
+        // Notify device monitor if a log-related command was sent
+        const upper = cmd.trim().toUpperCase();
+        if (upper.startsWith('LOG ') || upper.startsWith('UNLOG') || upper === 'UNLOGALL') {
+            window.dispatchEvent(new Event('log-changed'));
+        }
     }
 
     clear() {
