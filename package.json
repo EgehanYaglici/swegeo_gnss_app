@@ -1,6 +1,6 @@
 {
   "name": "swegeo-gnss-app",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "SWEGEO GNSS/INS Monitoring - Electron Edition",
   "main": "src/main/main.js",
   "scripts": {

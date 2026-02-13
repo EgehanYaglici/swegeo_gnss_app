@@ -450,16 +450,59 @@ body {
   opacity: 0;
   overflow: hidden;
   transition: max-height 0.4s ease, opacity 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .update-expand.visible {
-  max-height: 60px;
+  max-height: 200px;
   opacity: 1;
 }
 
-/* Release notes — hidden in sidebar (not enough space) */
+/* Release notes — scrollable, thin custom scrollbar */
 .update-release-notes {
-  display: none !important;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+  padding: 5px 6px 5px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  max-height: 72px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.update-release-notes::-webkit-scrollbar {
+  width: 3px;
+}
+
+.update-release-notes::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.update-release-notes::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.update-release-notes::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.update-release-notes ul {
+  margin: 0;
+  padding-left: 12px;
+  list-style: disc;
+}
+
+.update-release-notes li {
+  margin-bottom: 2px;
+}
+
+.update-release-notes p {
+  margin: 0;
 }
 
 /* Progress bar */
