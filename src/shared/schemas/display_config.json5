@@ -44,7 +44,8 @@
           "extra_fields": [
             {"field": "sol_status", "label": "Solution", "format": "int"},
             {"field": "num_sats", "label": "Satellites", "format": "int"},
-            {"field": "hdop", "label": "HDOP", "format": "float", "decimals": 1}
+            {"field": "hdop", "label": "HDOP", "format": "float", "decimals": 1},
+            {"field": "diff_age_s", "label": "Diff Age", "format": "float", "unit": "s", "decimals": 1}
           ]
         },
 
@@ -85,7 +86,8 @@
           "extra_fields": [
             {"field": "solution_status", "label": "Solution", "format": "str"},
             {"field": "position_type", "label": "Pos Type", "format": "str"},
-            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"},
+            {"field": "diff_age_s", "label": "Diff Age", "format": "float", "unit": "s", "decimals": 1}
           ]
         },
         "BESTPVTA": {
@@ -103,7 +105,8 @@
           "extra_fields": [
             {"field": "solution_status", "label": "Solution", "format": "str"},
             {"field": "position_type", "label": "Pos Type", "format": "str"},
-            {"field": "num_sv_used", "label": "Satellites", "format": "int"}
+            {"field": "num_sv_used", "label": "Satellites", "format": "int"},
+            {"field": "diff_age_s", "label": "Diff Age", "format": "float", "unit": "s", "decimals": 1}
           ]
         },
         "INSPOSA": {
@@ -116,7 +119,9 @@
             "height": "height_m"
           },
           "extra_fields": [
-            {"field": "status", "label": "INS Status", "format": "str"}
+            {"field": "status", "label": "INS Status", "format": "str"},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
           ]
         },
         "INSPVAA": {
@@ -135,7 +140,9 @@
             {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
             {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
             {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
-            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
           ]
         },
         "INSPVAXA": {
@@ -158,7 +165,42 @@
             {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
             {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
             {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
-            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "roll_sigma", "label": "Roll σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "pitch_sigma", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "azimuth_sigma", "label": "Azi σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "extended_status", "label": "Ext Status", "format": "str", "ref_table": "table_4_11_ins_extended_solution_status"},
+            {"field": "time_since_update_s", "label": "Age", "format": "float", "unit": "s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
+          ]
+        },
+        "INSPTNLPJKSA": {
+          "tag": "INSPTNLPJKSA",
+          "type": "ascii",
+          "description": "INS Projected (ASCII)",
+          "field_mapping": {
+            "latitude": "latitude_deg",
+            "longitude": "longitude_deg",
+            "height": "height_m"
+          },
+          "extra_fields": [
+            {"field": "ins_status", "label": "Status", "format": "str"},
+            {"field": "position_type", "label": "Pos Type", "format": "str"},
+            {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "heading_deg", "label": "Heading", "format": "float", "unit": "°", "decimals": 2},
+            {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "down_velocity_ms", "label": "D. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "accel_x_ms2", "label": "Acc X", "format": "float", "decimals": 3},
+            {"field": "accel_y_ms2", "label": "Acc Y", "format": "float", "decimals": 3},
+            {"field": "accel_z_ms2", "label": "Acc Z", "format": "float", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3},
+            {"field": "roll_rate_rad", "label": "Roll Rate", "format": "float", "unit": "rad/s", "decimals": 4},
+            {"field": "pitch_rate_rad", "label": "Pitch Rate", "format": "float", "unit": "rad/s", "decimals": 4},
+            {"field": "yaw_rate_rad", "label": "Yaw Rate", "format": "float", "unit": "rad/s", "decimals": 4}
           ]
         },
 
@@ -230,7 +272,9 @@
             "height": "height_m"
           },
           "extra_fields": [
-            {"field": "status", "label": "INS Status", "format": "int"}
+            {"field": "status", "label": "INS Status", "format": "str", "ref_table": "table_4_8_ins_status"},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
           ]
         },
         "INSPVAB": {
@@ -243,13 +287,15 @@
             "height": "height_m"
           },
           "extra_fields": [
-            {"field": "status", "label": "INS Status", "format": "int"},
+            {"field": "status", "label": "INS Status", "format": "str", "ref_table": "table_4_8_ins_status"},
             {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
             {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
             {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
             {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
             {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
-            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
           ]
         },
         "INSPVAXB": {
@@ -260,21 +306,29 @@
             "latitude": "latitude_deg",
             "longitude": "longitude_deg",
             "height": "height_m",
-            "lat_sigma": "latitude_stdev_m",
-            "lon_sigma": "longitude_stdev_m",
-            "hgt_sigma": "height_stdev_m"
+            "lat_sigma": "lat_sigma",
+            "lon_sigma": "lon_sigma",
+            "hgt_sigma": "height_sigma"
           },
           "extra_fields": [
-            {"field": "ins_status", "label": "INS Status", "format": "int"},
-            {"field": "position_type", "label": "Pos Type", "format": "int"},
+            {"field": "ins_status", "label": "INS Status", "format": "str", "ref_table": "table_4_8_ins_status"},
+            {"field": "position_type", "label": "Pos Type", "format": "str", "ref_table": "table_4_2_position_status"},
             {"field": "roll_deg", "label": "Roll", "format": "float", "unit": "°", "decimals": 2},
             {"field": "pitch_deg", "label": "Pitch", "format": "float", "unit": "°", "decimals": 2},
             {"field": "azimuth_deg", "label": "Azimuth", "format": "float", "unit": "°", "decimals": 2},
             {"field": "north_velocity_ms", "label": "N. Vel", "format": "float", "unit": "m/s", "decimals": 2},
             {"field": "east_velocity_ms", "label": "E. Vel", "format": "float", "unit": "m/s", "decimals": 2},
-            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2}
+            {"field": "up_velocity_ms", "label": "U. Vel", "format": "float", "unit": "m/s", "decimals": 2},
+            {"field": "roll_sigma", "label": "Roll σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "pitch_sigma", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "azimuth_sigma", "label": "Azi σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "extended_status", "label": "Ext Status", "format": "str", "ref_table": "table_4_11_ins_extended_solution_status"},
+            {"field": "time_since_update_s", "label": "Age", "format": "float", "unit": "s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "Seconds", "format": "float", "decimals": 3}
           ]
-        }
+        },
+
       }
     },
 

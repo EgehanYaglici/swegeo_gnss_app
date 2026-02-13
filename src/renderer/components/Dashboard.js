@@ -17,17 +17,15 @@ class Dashboard {
     init() {
         const pos = new PositionCard(this.api);
         const sat = new SatelliteCard(this.api);
-        const vel = new VelocityCard(this.api);
         const imu = new ImuCard(this.api);
-        const dm  = new SolutionStatusCard(this.api, this);
+        const dm = new SolutionStatusCard(this.api, this);
 
-        this.cards.push(pos, sat, vel, imu, dm);
+        this.cards.push(pos, sat, imu, dm);
         this._deviceMonitor = dm;
 
         // Register cards with display names
         this.cardRegistry['Position'] = pos;
         this.cardRegistry['Satellites'] = sat;
-        this.cardRegistry['Velocity'] = vel;
         this.cardRegistry['Attitude'] = imu;
     }
 
@@ -64,10 +62,15 @@ class Dashboard {
      * Handles: NMEA talker prefixes (GPGGA↔GGA), multi-source cards (SatelliteCard)
      */
     findCardByMessage(msgName) {
+        const results = this.findAllCardsByMessage(msgName);
+        return results.length > 0 ? results[0] : null;
+    }
+
+    findAllCardsByMessage(msgName) {
+        const results = [];
         for (const [name, card] of Object.entries(this.cardRegistry)) {
             if (!card.isActive) continue;
 
-            // Multi-source card (SatelliteCard) — check all active sources
             if (card.sourceSelector && card.sourceSelector.activeSources && card.sourceSelector.activeSources.size > 0) {
                 const msgs = card.sourceSelector.availableMessages || [];
                 for (const activeId of card.sourceSelector.activeSources) {
@@ -76,22 +79,23 @@ class Dashboard {
                     const srcName = msg.name || '';
                     const srcCmd = msg.log_command || '';
                     if (this._msgMatch(msgName, srcName) || this._msgMatch(msgName, srcCmd)) {
-                        return { cardName: name, card };
+                        results.push({ cardName: name, card });
+                        break;
                     }
                 }
             }
 
-            // Single-source card — check currentSource
             if (card.currentSource) {
                 const srcName = card.currentSource.name || '';
                 const srcId = String(card.currentSource.id || '');
                 const srcCmd = card.currentSource.log_command || '';
                 if (this._msgMatch(msgName, srcName) || this._msgMatch(msgName, srcId) || this._msgMatch(msgName, srcCmd)) {
-                    return { cardName: name, card };
+                    const already = results.find(r => r.cardName === name);
+                    if (!already) results.push({ cardName: name, card });
                 }
             }
         }
-        return null;
+        return results;
     }
 
     /**

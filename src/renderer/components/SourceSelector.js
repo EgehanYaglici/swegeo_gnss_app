@@ -46,7 +46,6 @@ class SourceSelector {
         this.currentSourceId = msgId;
         this.currentSourceName = msgName;
         this.label.textContent = msgName;
-        this.startShimmer();
     }
 
     getCurrentRate() {

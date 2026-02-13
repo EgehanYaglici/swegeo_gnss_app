@@ -37,8 +37,12 @@ class SolutionStatusCard {
         this._connectedAt = Date.now();
         this._startUptime();
         this._updateConnUI();
-        // Auto-query immediately on connect
-        this._refresh();
+
+        // Auto-query with backoff to catch logs set by other cards
+        console.log('[DeviceMonitor] Connected. Starting refresh sequence...');
+        setTimeout(() => this._refresh(), 500);  // Slight delay for serial settle
+        setTimeout(() => this._refresh(), 2000); // Retry 1
+        setTimeout(() => this._refresh(), 5000); // Retry 2
       } else {
         this._connectedAt = null;
         this._stopUptime();
@@ -66,7 +70,13 @@ class SolutionStatusCard {
       this.connDot.classList.toggle('disconnected', !this._connected);
     }
     if (this.connLabel) {
-      this.connLabel.textContent = this._connected ? 'Connected' : 'Not connected';
+      if (this._connected) {
+        // Try to find the connected port name if possible. 
+        // For now, simple textual update.
+        this.connLabel.innerHTML = `<span style="display:block; font-size:14px; color:var(--success);">Connected</span>`;
+      } else {
+        this.connLabel.textContent = 'Not connected';
+      }
     }
     if (!this._connected && this.connUptime) {
       this.connUptime.textContent = '';
@@ -81,9 +91,11 @@ class SolutionStatusCard {
       const h = Math.floor(elapsed / 3600);
       const m = Math.floor((elapsed % 3600) / 60);
       const s = elapsed % 60;
-      this.connUptime.textContent = h > 0
+      const timeStr = h > 0
         ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
         : `${m}:${String(s).padStart(2, '0')}`;
+
+      this.connUptime.innerHTML = `<span style="font-size:11px; color:var(--text-secondary); opacity:0.8;">${timeStr}</span>`;
     }, 1000);
   }
 
@@ -106,9 +118,15 @@ class SolutionStatusCard {
     }
 
     try {
+      console.log('[DeviceMonitor] Requesting status...');
       const comResult = await this.api.requestComconfig();
       const icomResult = await this.api.requestIcomconfig();
       const logResult = await this.api.requestLoglista();
+
+      console.log('[DeviceMonitor] Logs received:', logResult);
+      if (logResult && logResult.entries) {
+        console.log('[DeviceMonitor] Entry count:', logResult.entries.length);
+      }
 
       this._renderPorts(comResult.ports || [], icomResult.ports || []);
       this._logEntries = logResult.entries || [];
@@ -137,15 +155,19 @@ class SolutionStatusCard {
         ? (p.protocol ? `${p.protocol}${p.tcpPort ? ':' + p.tcpPort : ''}` : '')
         : (p.baud || '');
 
-      const inMode = p.inMode || 'N/A';
-      const outMode = p.outMode || 'N/A';
+      const icon = isEthernet
+        ? '<svg class="dm-port-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.035M9 20a6.001 6.001 0 006-6M3 20a6 6 0 0110-6m0 0a6 6 0 006 6" /></svg>'
+        : '<svg class="dm-port-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>';
 
-      return `<div class="dm-port-row">
-        <span class="dm-port-name">${p.name}</span>
-        <span class="dm-port-baud">${detail}</span>
-        <div class="dm-port-modes">
-          <span class="dm-port-mode-tag in">IN:${inMode}</span>
-          <span class="dm-port-mode-tag out">OUT:${outMode}</span>
+      return `<div class="dm-port-item">
+        ${icon}
+        <div style="flex:1; min-width:0;">
+          <div class="dm-port-name">${p.name}</div>
+          <div style="font-size:10px; color:var(--text-muted);">${detail}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+           <span class="dm-port-mode-tag in">${p.inMode || '-'}</span>
+           <span class="dm-port-mode-tag out">${p.outMode || '-'}</span>
         </div>
       </div>`;
     }).join('');
@@ -170,23 +192,30 @@ class SolutionStatusCard {
     });
 
     this.logList.innerHTML = sorted.map((e, i) => {
-      const rate = e.period > 0 ? `${e.period}Hz` : e.mode;
+      const rate = e.period > 0 ? `${e.period}` : (e.mode === 'ONCHANGED' ? 'CHG' : e.mode);
+      const isHz = e.period > 0;
 
-      // Check if any dashboard card is using this message
-      let cardTag = '';
+      let cardTags = '';
       if (this.dashboard) {
-        const match = this.dashboard.findCardByMessage(e.msg);
-        if (match) {
-          cardTag = `<span class="dm-card-tag">${match.cardName}</span>`;
-        }
+        const matches = this.dashboard.findAllCardsByMessage(e.msg);
+        cardTags = matches.map(m => {
+          // Color-code based on card type/name if possible, or just use a nice generic badge
+          return `<span class="dm-log-badge" title="Used by ${m.cardName}">${m.cardName.substring(0, 3).toUpperCase()}</span>`;
+        }).join('');
       }
 
-      return `<div class="dm-log-row" data-idx="${i}">
-        <span class="dm-log-msg">${e.msg}</span>
-        ${cardTag}
-        <span class="dm-log-rate">${rate}</span>
-        <span class="dm-log-port">${e.port}</span>
-        <button class="dm-unlog-btn" data-msg="${e.msg}" title="UNLOG ${e.msg}">✕</button>
+      return `<div class="dm-log-item" data-idx="${i}">
+        <div class="dm-log-main">
+          <span class="dm-log-name">${e.msg}</span>
+          <div class="dm-log-tags">${cardTags}</div>
+        </div>
+        <div class="dm-log-meta">
+          <span class="dm-log-info ${isHz ? 'is-hz' : ''}">${rate}${isHz ? '<small>Hz</small>' : ''}</span>
+          <span class="dm-log-port">${e.port}</span>
+          <button class="dm-unlog-btn" data-msg="${e.msg}" title="Stop Logging (UNLOG)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>`;
     }).join('');
 

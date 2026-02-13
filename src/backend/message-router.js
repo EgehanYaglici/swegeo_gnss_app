@@ -330,8 +330,14 @@ class MessageRouter extends EventEmitter {
   _convertField(raw, type) {
     if (!raw) return null;
     switch (type) {
-      case 'int': return parseInt(raw, 10) || null;
-      case 'float': return parseFloat(raw) || null;
+      case 'int': {
+        const val = parseInt(raw, 10);
+        return isNaN(val) ? null : val;
+      }
+      case 'float': {
+        const val = parseFloat(raw);
+        return isNaN(val) ? null : val;
+      }
       case 'lat_dm':
       case 'lon_dm': {
         const val = parseFloat(raw);

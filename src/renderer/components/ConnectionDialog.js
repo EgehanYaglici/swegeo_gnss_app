@@ -52,14 +52,18 @@ class ConnectionDialog {
         // Status Listener
         this.api.onConnection((connected) => {
             this.isConnected = connected;
-            this.connectBtn.className = `titlebar-connection-btn ${connected ? 'connected' : 'disconnected'}`;
+            this.connectBtn.className = `sidebar-connection-btn ${connected ? 'connected' : 'disconnected'}`;
             this.connectBtn.title = connected ? 'Disconnect' : 'Connect';
 
-            // Update status text
             const statusText = this.connectBtn.querySelector('.connection-status-text');
             if (statusText) {
                 statusText.textContent = connected ? 'Connected' : 'Disconnected';
             }
+
+            const iconConn = this.connectBtn.querySelector('.conn-icon-connected');
+            const iconDisc = this.connectBtn.querySelector('.conn-icon-disconnected');
+            if (iconConn) iconConn.style.display = connected ? 'block' : 'none';
+            if (iconDisc) iconDisc.style.display = connected ? 'none' : 'block';
 
             if (connected) this.hide();
         });

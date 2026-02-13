@@ -137,16 +137,13 @@ class ImuCard {
         console.log('[ImuCard] Unknown message type, defaulting to INS mode');
       }
 
-      // UNLOG all IMU sources when switching (they conflict at 100Hz)
-      if (this.isActive) {
+      if (this.isActive && this.currentSource) {
         try {
-          // UNLOG all high-rate IMU sources
+          await this.api.unsubscribe('imu', this.currentSource.id, this.currentSource.name);
+          const oldCmd = this._getCommandName(this.currentSource);
+          if (oldCmd) await this.api.sendCommand(`UNLOG ${oldCmd}`);
           for (const imuSrc of this.HIGH_RATE_IMU) {
             await this.api.sendCommand(`UNLOG ${imuSrc}`);
-          }
-          // Also unsubscribe from old source if any
-          if (this.currentSource) {
-            await this.api.unsubscribe('imu', this.currentSource.id, this.currentSource.name);
           }
         } catch (e) {
           console.error('[ImuCard] Error unlogging old sources:', e);
@@ -195,12 +192,20 @@ class ImuCard {
     // Data listener
     this.api.onData('imu', (data) => this._update(data));
 
-    // Window resize
-    window.addEventListener('resize', () => {
-      if (this.isActive) this._resizeCanvas();
-    });
+    this._resizeDebounce = null;
+    const doResize = () => {
+      if (this._resizeDebounce) clearTimeout(this._resizeDebounce);
+      this._resizeDebounce = setTimeout(() => {
+        this._resizeCanvas();
+        this._drawPFD();
+      }, 60);
+    };
+    window.addEventListener('resize', doResize);
+    if (this.canvas && this.canvas.parentElement) {
+      this._resizeObs = new ResizeObserver(doResize);
+      this._resizeObs.observe(this.canvas.parentElement);
+    }
 
-    // Initial draw (idle state)
     this._resizeCanvas();
     this._drawPFD();
   }
@@ -246,8 +251,9 @@ class ImuCard {
       if (this.currentSource) {
         await this.api.unsubscribe('imu', this.currentSource.id, this.currentSource.name);
         this.sourceSelector.stopShimmer();
+        const cmdName = this._getCommandName(this.currentSource);
+        if (cmdName) await this.api.sendCommand(`UNLOG ${cmdName}`);
       }
-      // UNLOG all high-rate IMU sources
       for (const imuSrc of this.HIGH_RATE_IMU) {
         await this.api.sendCommand(`UNLOG ${imuSrc}`);
       }
@@ -376,8 +382,6 @@ class ImuCard {
     if (this.elGy) this.elGy.textContent = gy != null ? Number(gy).toFixed(3) : '--';
     if (this.elGz) this.elGz.textContent = gz != null ? Number(gz).toFixed(3) : '--';
 
-    // Stop shimmer on first data
-    if (this.sourceSelector) this.sourceSelector.stopShimmer();
   }
 
   _calculateImuTilt(ax, ay, az) {
@@ -502,8 +506,7 @@ class ImuCard {
     ctx.save();
     ctx.clearRect(0, 0, W, H);
 
-    // --- Background (dark cockpit) ---
-    ctx.fillStyle = '#0d1117';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, W, H);
 
     // --- Clipping circle for PFD area ---
@@ -612,7 +615,7 @@ class ImuCard {
     }
 
     // --- Heading tape (bottom) ---
-    this._drawHeadingTape(ctx, W, H, yaw);
+    // this._drawHeadingTape(ctx, W, H, yaw);
 
     ctx.restore();
   }

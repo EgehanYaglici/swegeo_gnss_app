@@ -87,12 +87,10 @@ class PositionCard {
                 console.warn('[PositionCard] Error clearing data:', e);
             }
 
-            // 4. Activate new source
             if (this.isActive) {
-                // Subscribe (Data Flow) — shimmer keeps running until data arrives
                 try {
                     await this.api.subscribe('position', msgId, msgName);
-                    console.log(`[PositionCard] Subscribed to ${msgName}`);
+                    this.sourceSelector.startShimmer();
                 } catch (e) {
                     console.error('[PositionCard] Error subscribing:', e);
                 }
@@ -216,8 +214,15 @@ class PositionCard {
                 maxZoom: 20
             }).addTo(this.map);
 
-            // Fix Leaflet rendering in hidden containers
             setTimeout(() => this.map.invalidateSize(), 500);
+
+            const mapEl = document.getElementById('pos-map');
+            if (mapEl) {
+                this._mapResizeObs = new ResizeObserver(() => {
+                    if (this.map) this.map.invalidateSize();
+                });
+                this._mapResizeObs.observe(mapEl);
+            }
         } catch (e) {
             console.warn('Leaflet init failed:', e);
         }
@@ -225,10 +230,9 @@ class PositionCard {
 
     update(data) {
         const now = performance.now();
-        if (now - this.lastUpdate < 100) return; // Throttle to 10 FPS
+        if (now - this.lastUpdate < 100) return;
         this.lastUpdate = now;
 
-        // Extract from normalized object (from message-router)
         const lat = data.latitude;
         const lon = data.longitude;
         const height = data.height || data.altitude;

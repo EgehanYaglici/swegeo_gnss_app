@@ -5,16 +5,16 @@ let _nameIndex = null;
 let _idIndex = null;
 
 const TYPE_FORMATS = {
-  uint8:   { size: 1, read: (dv, off) => dv.getUint8(off) },
-  int8:    { size: 1, read: (dv, off) => dv.getInt8(off) },
-  uint16:  { size: 2, read: (dv, off) => dv.getUint16(off, true) },
-  int16:   { size: 2, read: (dv, off) => dv.getInt16(off, true) },
-  uint32:  { size: 4, read: (dv, off) => dv.getUint32(off, true) },
-  int32:   { size: 4, read: (dv, off) => dv.getInt32(off, true) },
+  uint8: { size: 1, read: (dv, off) => dv.getUint8(off) },
+  int8: { size: 1, read: (dv, off) => dv.getInt8(off) },
+  uint16: { size: 2, read: (dv, off) => dv.getUint16(off, true) },
+  int16: { size: 2, read: (dv, off) => dv.getInt16(off, true) },
+  uint32: { size: 4, read: (dv, off) => dv.getUint32(off, true) },
+  int32: { size: 4, read: (dv, off) => dv.getInt32(off, true) },
   float32: { size: 4, read: (dv, off) => dv.getFloat32(off, true) },
-  float:   { size: 4, read: (dv, off) => dv.getFloat32(off, true) },
+  float: { size: 4, read: (dv, off) => dv.getFloat32(off, true) },
   float64: { size: 8, read: (dv, off) => dv.getFloat64(off, true) },
-  double:  { size: 8, read: (dv, off) => dv.getFloat64(off, true) },
+  double: { size: 8, read: (dv, off) => dv.getFloat64(off, true) },
 };
 
 function normalizeName(name) {
@@ -162,34 +162,62 @@ function parseBinaryPayload(msgId, payload, frameCrc) {
       continue;
     }
 
-    if (ftype === 'char') {
-      const length = field.length || field.count || 1;
-      const { value, newOffset } = readChar(buf, offset, length);
-      values[name] = value;
-      offset = newOffset;
-    } else if (ftype === 'bytes') {
-      const length = field.length || field.count || 1;
-      values[name] = buf.slice(offset, offset + length);
-      offset += length;
-    } else {
-      const count = field.count || 1;
-      const { value, newOffset } = readNumeric(dv, offset, ftype, count);
-      let finalValue = value;
-      if (field.scale != null) {
-        if (typeof finalValue === 'number') {
-          finalValue = finalValue * field.scale;
-        } else if (Array.isArray(finalValue)) {
-          finalValue = finalValue.map(v => v * field.scale);
+    try {
+      if (ftype === 'char') {
+        const length = field.length || field.count || 1;
+        if (offset + length > buf.byteLength) {
+          console.warn(`[BinaryParser] Truncated char field ${name} (ID=${msgId}). Needed ${length}, left ${buf.byteLength - offset}`);
+          values[name] = ''; // Safe default
+          fieldsInfo.push({ name, unit, note });
+          continue;
         }
+        const { value, newOffset } = readChar(buf, offset, length);
+        values[name] = value;
+        offset = newOffset;
+      } else if (ftype === 'bytes') {
+        const length = field.length || field.count || 1;
+        if (offset + length > buf.byteLength) {
+          console.warn(`[BinaryParser] Truncated bytes field ${name} (ID=${msgId})`);
+          values[name] = null;
+          fieldsInfo.push({ name, unit, note });
+          continue;
+        }
+        values[name] = buf.slice(offset, offset + length);
+        offset += length;
+      } else {
+        const count = field.count || 1;
+        // Pre-check size to avoid throw
+        const fmt = TYPE_FORMATS[ftype];
+        const needed = (fmt ? fmt.size : 1) * count;
+        if (offset + needed > buf.byteLength) {
+          // console.warn(`[BinaryParser] Truncated numeric field ${name} (ID=${msgId}). Needed ${needed}, left ${buf.byteLength - offset}`);
+          values[name] = 0; // Safe default for missing fields (zero-padding)
+          fieldsInfo.push({ name, unit, note });
+          continue;
+        }
+
+        const { value, newOffset } = readNumeric(dv, offset, ftype, count);
+        let finalValue = value;
+        if (field.scale != null) {
+          if (typeof finalValue === 'number') {
+            finalValue = finalValue * field.scale;
+          } else if (Array.isArray(finalValue)) {
+            finalValue = finalValue.map(v => v * field.scale);
+          }
+        }
+        values[name] = finalValue;
+        offset = newOffset;
       }
-      values[name] = finalValue;
-      offset = newOffset;
+      fieldsInfo.push({ name, unit, note });
+    } catch (e) {
+      console.error(`[BinaryParser] Error reading field ${name} (ID=${msgId}):`, e.message);
+      break; // Stop parsing if unexpected error
     }
-    fieldsInfo.push({ name, unit, note });
   }
 
   // Derived fields
   for (const dfield of (entry.derived || [])) {
+    // ... same as before
     const name = dfield.name;
     if (!name) continue;
     values[name] = safeEval(dfield.expr || '', values);

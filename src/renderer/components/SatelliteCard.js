@@ -608,7 +608,7 @@ class SatelliteCard {
             // Dynamic color modern icon — replace all currentColor occurrences
             const iconSvg = this.SVG_MODERN_SAT_FILLED.split('currentColor').join(color);
             const pct = data.total > 0 ? (data.active / data.total) * 100 : 0;
-            const animClass = data.active > 0 ? 'sat-icon-anim' : '';
+            const animClass = '';
 
             const item = document.createElement('div');
             item.className = `sat-stat-item ${isHidden ? 'dimmed' : ''}`;

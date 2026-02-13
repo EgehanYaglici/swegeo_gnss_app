@@ -1,13 +1,14 @@
-// Device Query - handles COMCONFIG, ICOMCONFIG and LOGLISTA request/response cycles
-// Supports both COM (serial) and ICOM (ethernet) ports
 const { EventEmitter } = require('events');
 
-const COMCONFIG_TIMEOUT_MS = 2500;
-const COMCONFIG_EARLY_EXIT_MS = 300;
-const ICOMCONFIG_TIMEOUT_MS = 2500;
-const ICOMCONFIG_EARLY_EXIT_MS = 300;
-const LOGLISTA_TIMEOUT_MS = 2500;
-const LOGLISTA_COOLDOWN_MS = 1500;
+const COMCONFIG_TIMEOUT_MS = 4000;
+const COMCONFIG_SETTLE_MS = 600;
+const ICOMCONFIG_TIMEOUT_MS = 4000;
+const ICOMCONFIG_SETTLE_MS = 600;
+const LOGLISTA_TIMEOUT_MS = 4000;
+const LOGLISTA_SETTLE_MS = 800;
+const LOGLISTA_COOLDOWN_MS = 1000;
+const RETRY_DELAY_MS = 500;
+const MAX_RETRIES = 2;
 
 const PORT_REGEX = /^(COM\d+|ICOM\d+)$/i;
 const ICOM_REGEX = /^ICOM\d+$/i;
@@ -16,89 +17,107 @@ class DeviceQuery extends EventEmitter {
   constructor(serialManager) {
     super();
     this._serial = serialManager;
-    this._mode = null;          // null | 'COMCONFIG' | 'LOGLISTA'
+    this._mode = null;
     this._buffer = [];
     this._timeoutId = null;
-    this._earlyExitId = null;
+    this._settleId = null;
     this._resolve = null;
     this._loglistaCooldownUntil = 0;
+    this._retryCount = 0;
+    this._retryTimer = null;
 
-    // Listen to serial lines
     this._lineHandler = (text) => this._onLine(text);
     this._serial.on('line', this._lineHandler);
   }
 
-  // --- Public API ---
-
   requestComconfig() {
-    return new Promise((resolve) => {
-      if (this._mode) {
-        resolve({ ports: [], error: 'Another query is in progress' });
-        return;
-      }
-      this._mode = 'COMCONFIG';
-      this._buffer = [];
-      this._resolve = resolve;
-
-      this._serial.sendCommand('LOG COMCONFIG ONCE');
-
-      this._timeoutId = setTimeout(() => {
-        const ports = this._parseComconfig(this._buffer);
-        this._finish({ ports });
-      }, COMCONFIG_TIMEOUT_MS);
-    });
+    return this._requestWithRetry('COMCONFIG');
   }
 
   requestIcomconfig() {
-    return new Promise((resolve) => {
-      if (this._mode) {
-        resolve({ ports: [], error: 'Another query is in progress' });
-        return;
-      }
-      this._mode = 'ICOMCONFIG';
-      this._buffer = [];
-      this._resolve = resolve;
-
-      this._serial.sendCommand('LOG ICOMCONFIG ONCE');
-
-      this._timeoutId = setTimeout(() => {
-        const ports = this._parseIcomconfig(this._buffer);
-        this._finish({ ports });
-      }, ICOMCONFIG_TIMEOUT_MS);
-    });
+    return this._requestWithRetry('ICOMCONFIG');
   }
 
   requestLoglista() {
-    return new Promise((resolve) => {
-      if (this._mode) {
-        resolve({ entries: [], error: 'Another query is in progress' });
-        return;
-      }
+    return this._requestWithRetry('LOGLISTA');
+  }
 
+  _requestWithRetry(type) {
+    return new Promise((resolve) => {
+      this._retryCount = 0;
+      this._doRequest(type, resolve);
+    });
+  }
+
+  _doRequest(type, finalResolve) {
+    if (this._mode) {
+      this._finish(this._emptyResult(type));
+    }
+
+    if (type === 'LOGLISTA') {
       const now = Date.now();
       if (now < this._loglistaCooldownUntil) {
-        resolve({ entries: [], error: 'Cooldown active' });
+        finalResolve(this._lastLoglistaResult || { entries: [] });
+        return;
+      }
+    }
+
+    this._mode = type;
+    this._buffer = [];
+    this._resolve = (result) => {
+      const isEmpty = type === 'LOGLISTA'
+        ? (!result.entries || result.entries.length === 0)
+        : (!result.ports || result.ports.length === 0);
+
+      if (isEmpty && !result.error && this._retryCount < MAX_RETRIES) {
+        this._retryCount++;
+        if (this._retryTimer) clearTimeout(this._retryTimer);
+        this._retryTimer = setTimeout(() => {
+          this._doRequest(type, finalResolve);
+        }, RETRY_DELAY_MS);
         return;
       }
 
-      this._mode = 'LOGLISTA';
-      this._buffer = [];
-      this._resolve = resolve;
+      if (type === 'LOGLISTA' && result.entries && result.entries.length > 0) {
+        this._lastLoglistaResult = result;
+        this._loglistaCooldownUntil = Date.now() + LOGLISTA_COOLDOWN_MS;
+      }
 
-      this._serial.sendCommand('LOG LOGLISTA ONCE');
+      finalResolve(result);
+    };
 
-      this._timeoutId = setTimeout(() => {
-        this._finish({ entries: [], error: 'Timeout waiting for LOGLISTA' });
-      }, LOGLISTA_TIMEOUT_MS);
-    });
+    const cmd = type === 'COMCONFIG' ? 'LOG COMCONFIG ONCE'
+      : type === 'ICOMCONFIG' ? 'LOG ICOMCONFIG ONCE'
+        : 'LOG LOGLISTA ONCE';
+    this._serial.sendCommand(cmd);
+
+    const timeout = type === 'LOGLISTA' ? LOGLISTA_TIMEOUT_MS
+      : type === 'ICOMCONFIG' ? ICOMCONFIG_TIMEOUT_MS
+        : COMCONFIG_TIMEOUT_MS;
+
+    this._timeoutId = setTimeout(() => {
+      const result = this._parseCurrentBuffer(type);
+      this._finish(result);
+    }, timeout);
+  }
+
+  _parseCurrentBuffer(type) {
+    if (type === 'COMCONFIG') return { ports: this._parseComconfig(this._buffer) };
+    if (type === 'ICOMCONFIG') return { ports: this._parseIcomconfig(this._buffer) };
+    if (type === 'LOGLISTA') return { entries: this._parseLoglista(this._buffer) };
+    return {};
+  }
+
+  _emptyResult(type) {
+    if (type === 'LOGLISTA') return { entries: [] };
+    return { ports: [] };
   }
 
   destroy() {
     this._serial.removeListener('line', this._lineHandler);
     this._clearTimers();
+    if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
   }
-
-  // --- Internal ---
 
   _onLine(text) {
     if (!this._mode) return;
@@ -115,107 +134,179 @@ class DeviceQuery extends EventEmitter {
 
   _onComconfigLine(line) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('<') || trimmed.startsWith('[') || trimmed.startsWith('>')) return;
+    if (!trimmed) return;
+    if (trimmed.startsWith('<') || trimmed.startsWith('[') || trimmed.startsWith('>')) return;
+    if (trimmed.startsWith('$')) return;
 
-    this._buffer.push(trimmed);
+    const upper = trimmed.toUpperCase();
 
-    // Check if this line contains a COM/ICOM port entry
+
+    if (upper.includes('LOGLISTA') || upper.includes('ICOMCONFIG')) return;
+    if (upper.startsWith('#INSPVA') || upper.startsWith('#BESTPOS') || upper.startsWith('#BESTVEL')) return;
+    if (upper.startsWith('$INSPVA') || upper.startsWith('$BESTPOS') || upper.startsWith('$BESTVEL')) return;
+    if (upper.startsWith('#INSATT') || upper.startsWith('#RAWIMU') || upper.startsWith('#CORRIMU')) return;
+    if (upper.startsWith('$INSATT') || upper.startsWith('$RAWIMU') || upper.startsWith('$CORRIMU')) return;
+
+    const hasComconfig = upper.includes('COMCONFIG');
     const tokens = trimmed.split(/\s+/);
-    if (tokens.length > 0 && PORT_REGEX.test(tokens[0])) {
-      // Reset the early-exit timer each time we see a port line
-      if (this._earlyExitId) clearTimeout(this._earlyExitId);
-      this._earlyExitId = setTimeout(() => {
-        this._clearTimers();
+    const isPortLine = tokens.length > 0 && PORT_REGEX.test(tokens[0]) && !ICOM_REGEX.test(tokens[0]);
+
+    if (hasComconfig || isPortLine) {
+      this._buffer.push(trimmed);
+      this._resetSettle(COMCONFIG_SETTLE_MS, () => {
         const ports = this._parseComconfig(this._buffer);
         this._finish({ ports });
-      }, COMCONFIG_EARLY_EXIT_MS);
+      });
     }
   }
 
   _onIcomconfigLine(line) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('<') || trimmed.startsWith('[') || trimmed.startsWith('>')) return;
+    if (!trimmed) return;
+    if (trimmed.startsWith('<') || trimmed.startsWith('[') || trimmed.startsWith('>')) return;
+    if (trimmed.startsWith('$')) return;
 
-    this._buffer.push(trimmed);
+    const upper = trimmed.toUpperCase();
+    if (upper.includes('LOGLISTA') || (upper.includes('COMCONFIG') && !upper.includes('ICOMCONFIG'))) return;
+    if (upper.startsWith('#INSPVA') || upper.startsWith('#BESTPOS') || upper.startsWith('#BESTVEL')) return;
+    if (upper.startsWith('$INSPVA') || upper.startsWith('$BESTPOS') || upper.startsWith('$BESTVEL')) return;
+    if (upper.startsWith('#INSATT') || upper.startsWith('#RAWIMU') || upper.startsWith('#CORRIMU')) return;
+    if (upper.startsWith('$INSATT') || upper.startsWith('$RAWIMU') || upper.startsWith('$CORRIMU')) return;
 
-    // Check if this line contains an ICOM port entry
+    const hasIcomconfig = upper.includes('ICOMCONFIG');
     const tokens = trimmed.split(/\s+/);
-    if (tokens.length > 0 && ICOM_REGEX.test(tokens[0])) {
-      // Reset the early-exit timer each time we see an ICOM line
-      if (this._earlyExitId) clearTimeout(this._earlyExitId);
-      this._earlyExitId = setTimeout(() => {
-        this._clearTimers();
+    const isIcomLine = tokens.length > 0 && ICOM_REGEX.test(tokens[0]);
+
+    if (hasIcomconfig || isIcomLine) {
+      this._buffer.push(trimmed);
+      this._resetSettle(ICOMCONFIG_SETTLE_MS, () => {
         const ports = this._parseIcomconfig(this._buffer);
         this._finish({ ports });
-      }, ICOMCONFIG_EARLY_EXIT_MS);
+      });
     }
   }
 
   _onLoglistaLine(line) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('>')) return;
+    if (trimmed.startsWith('$')) return;
 
-    this._buffer.push(trimmed);
+    const upper = trimmed.toUpperCase();
+    if (upper.includes('COMCONFIG') || upper.includes('ICOMCONFIG')) return;
+    // Only filter if the line strictly STARTS with these logs (ignoring the LOGLISTA content itself)
+    if (upper.startsWith('#INSPVA') || upper.startsWith('#BESTPOS') || upper.startsWith('#BESTVEL')) return;
+    if (upper.startsWith('$INSPVA') || upper.startsWith('$BESTPOS') || upper.startsWith('$BESTVEL')) return;
 
-    // When we see LOGLISTA in any line, start an early-exit timer
-    // (give time for multi-line responses to arrive fully)
-    if (trimmed.includes('#LOGLISTA') || trimmed.toUpperCase().includes('LOGLISTA')) {
-      if (this._earlyExitId) clearTimeout(this._earlyExitId);
-      this._earlyExitId = setTimeout(() => {
-        this._clearTimers();
+    if (trimmed.includes('#LOGLISTA') || upper.includes('LOGLISTA')) {
+      this._buffer.push(trimmed);
+      this._resetSettle(LOGLISTA_SETTLE_MS, () => {
         const entries = this._parseLoglista(this._buffer);
-        this._loglistaCooldownUntil = Date.now() + LOGLISTA_COOLDOWN_MS;
         this._finish({ entries });
-      }, 400); // Wait 400ms for all data to arrive
+      });
     }
+  }
+
+  _resetSettle(ms, cb) {
+    if (this._settleId) clearTimeout(this._settleId);
+    this._settleId = setTimeout(() => {
+      this._clearTimers();
+      cb();
+    }, ms);
   }
 
   _parseComconfig(lines) {
     const ports = [];
     const seen = new Set();
+    const PORT_REGEX = /^(COM\d+|ICOM\d+)$/i;
+    const ICOM_REGEX = /^ICOM\d+$/i;
 
     for (const line of lines) {
-      const tokens = line.split(/\s+/);
+      // Handle both raw lines "COM1 9600..." and message format "...;COM1,9600..."
+      let data = line.trim();
+      if (data.includes(';')) {
+        data = data.split(';')[1]; // Take part after header
+      }
+
+      // Try comma-separated (standard standard) vs space-separated (abbreviated)
+      let tokens = data.includes(',') ? data.split(',').map(t => t.trim()) : data.split(/\s+/);
+
+      // Remove CRC if present (*1234abcd)
+      if (tokens.length > 0) {
+        tokens[tokens.length - 1] = tokens[tokens.length - 1].split('*')[0];
+      }
+
       if (tokens.length === 0) continue;
 
-      if (PORT_REGEX.test(tokens[0])) {
+      if (PORT_REGEX.test(tokens[0]) && !ICOM_REGEX.test(tokens[0])) {
         const name = tokens[0].toUpperCase();
         if (seen.has(name)) continue;
         seen.add(name);
 
-        const type = name.startsWith('ICOM') ? 'ethernet' : 'serial';
-        // Try to extract baud, in_mode, out_mode from the line
+        const type = 'serial';
         let baud = null, inMode = null, outMode = null;
-        // Format: COM1 115200 N 8 1 IN:AUTO OUT:BYNAV
-        if (tokens.length >= 2) baud = tokens[1];
-        const inMatch = line.match(/IN:(\S+)/i);
-        const outMatch = line.match(/OUT:(\S+)/i);
-        if (inMatch) inMode = inMatch[1];
-        if (outMatch) outMode = outMatch[1];
+
+        // Standard COMCONFIG: port, baud, parity, data, stop, hand, echo, break, rx_type, tx_type
+        if (tokens.length >= 2 && /^\d+$/.test(tokens[1])) {
+          baud = tokens[1];
+        }
+
+        // Try to find RX/TX types if present (usually indices 8 and 9 if baud is 1)
+        // But tokens might be mixed. Let's look for known keywords or positions.
+        // COMCONFIG format: 
+        // 1: baud, 2: parity, 3: data, 4: stop, 5: hand, 6: echo, 7: break, 8: rx, 9: tx
+        if (tokens.length >= 9) {
+          // Assume standard position logic if comma separated
+          if (data.includes(',')) {
+            // tokens[8] is rx, tokens[9] is tx
+            if (tokens[8]) inMode = tokens[8];
+            if (tokens[9]) outMode = tokens[9];
+          }
+        }
+
+        // Fallback to regex search if positional failed or strictly looking for "IN:..." tags
+        if (!inMode) {
+          const inMatch = line.match(/IN:(\S+)/i);
+          if (inMatch) inMode = inMatch[1];
+        }
+        if (!outMode) {
+          const outMatch = line.match(/OUT:(\S+)/i);
+          if (outMatch) outMode = outMatch[1];
+        }
+
+        // Fallback for abbreviated "COM1 9600 N 8 1 N CTS ON ALL ALL"
+        if (!inMode && tokens.length > 8) inMode = tokens[8];
+        if (!outMode && tokens.length > 9) outMode = tokens[9];
 
         ports.push({ name, type, baud, inMode, outMode });
       }
     }
 
-    // Sort: COM before ICOM, then by number
     ports.sort((a, b) => {
-      if (a.type !== b.type) return a.type === 'serial' ? -1 : 1;
-      const numA = parseInt(a.name.replace(/\D/g, ''));
-      const numB = parseInt(b.name.replace(/\D/g, ''));
+      const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
 
     return ports;
   }
 
-  // Parse ICOMCONFIG response
-  // Format: ICOM1 TCP :1111 IN:NONE OUT:NONE
   _parseIcomconfig(lines) {
     const ports = [];
     const seen = new Set();
+    const ICOM_REGEX = /^ICOM\d+$/i;
 
     for (const line of lines) {
-      const tokens = line.split(/\s+/);
+      let data = line.trim();
+      if (data.includes(';')) {
+        data = data.split(';')[1];
+      }
+
+      let tokens = data.includes(',') ? data.split(',').map(t => t.trim()) : data.split(/\s+/);
+      // Remove CRC
+      if (tokens.length > 0) {
+        tokens[tokens.length - 1] = tokens[tokens.length - 1].split('*')[0];
+      }
+
       if (tokens.length === 0) continue;
 
       if (ICOM_REGEX.test(tokens[0])) {
@@ -223,37 +314,51 @@ class DeviceQuery extends EventEmitter {
         if (seen.has(name)) continue;
         seen.add(name);
 
-        // Extract protocol and port number
         let protocol = null, tcpPort = null, inMode = null, outMode = null;
-        if (tokens.length >= 2) protocol = tokens[1];  // TCP, UDP, etc.
 
-        // Look for :PORT pattern
+        // ICOMCONFIG format: port, protocol, protocol_port, ...
+        // e.g. ICOM1,TCP,3001,ALL,ALL...
+        if (tokens.length >= 2) protocol = tokens[1];
+        if (tokens.length >= 3) tcpPort = tokens[2];
+
+        // Try positions
+        if (data.includes(',')) {
+          // tokens[4] input, tokens[5] output
+          if (tokens.length > 4) inMode = tokens[4];
+          if (tokens.length > 5) outMode = tokens[5];
+        }
+
+        // Fallbacks
         const portMatch = line.match(/:(\d+)/);
-        if (portMatch) tcpPort = portMatch[1];
+        if (!tcpPort && portMatch) tcpPort = portMatch[1];
 
-        const inMatch = line.match(/IN:(\S+)/i);
-        const outMatch = line.match(/OUT:(\S+)/i);
-        if (inMatch) inMode = inMatch[1];
-        if (outMatch) outMode = outMatch[1];
+        if (!inMode) {
+          const inMatch = line.match(/IN:(\S+)/i);
+          if (inMatch) inMode = inMatch[1];
+        }
+        if (!outMode) {
+          const outMatch = line.match(/OUT:(\S+)/i);
+          if (outMatch) outMode = outMatch[1];
+        }
 
         ports.push({ name, type: 'ethernet', protocol, tcpPort, inMode, outMode });
       }
     }
 
-    // Sort by number
     ports.sort((a, b) => {
-      const numA = parseInt(a.name.replace(/\D/g, ''));
-      const numB = parseInt(b.name.replace(/\D/g, ''));
+      const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
 
+    console.log('[DeviceQuery] Parsed ICOM ports:', ports);
     return ports;
   }
 
   _parseLoglista(lines) {
+    console.log('[DeviceQuery] Parsing LOGLISTA lines:', lines);
     const entries = [];
 
-    // Find the LOGLISTA line
     let payload = '';
     for (const line of lines) {
       const idx = line.indexOf('#LOGLISTA');
@@ -269,23 +374,17 @@ class DeviceQuery extends EventEmitter {
 
     if (!payload) return entries;
 
-    // Strip checksum: everything after last *
     const starIdx = payload.lastIndexOf('*');
     if (starIdx !== -1) payload = payload.substring(0, starIdx);
 
-    // Strip header: everything before first ;
     const semiIdx = payload.indexOf(';');
     if (semiIdx !== -1) payload = payload.substring(semiIdx + 1);
 
-    // Tokenize on comma
     const tokens = payload.split(',').map(t => t.trim()).filter(t => t);
 
-    // Skip first token if it's a numeric count
     let i = 0;
     if (tokens.length > 0 && /^\d+$/.test(tokens[0])) i = 1;
 
-    // Parse 6-token groups: port, msg, mode, period, extra, hold
-    // Need indices i..i+5 (6 items), so i+5 must be < tokens.length
     while (i + 6 <= tokens.length) {
       const port = tokens[i].toUpperCase();
       const msg = tokens[i + 1].toUpperCase();
@@ -293,12 +392,19 @@ class DeviceQuery extends EventEmitter {
       const period = parseFloat(tokens[i + 3]) || 0;
       const extra = parseFloat(tokens[i + 4]) || 0;
       const hold = tokens[i + 5];
-      i += 6;
 
-      // Accept both COM and ICOM port prefixes
-      if (!PORT_REGEX.test(port)) continue;
-
-      entries.push({ port, msg, mode, period, extra, hold });
+      // Check if port is valid (e.g. COM1, ICOM1)
+      if (PORT_REGEX.test(port)) {
+        entries.push({ port, msg, mode, period, extra, hold });
+        i += 6;
+      } else {
+        // If not a valid port, maybe we are misaligned? 
+        // Try to skip one token and continue? Or just break?
+        // For now, just increment by 1 to search for next valid port?
+        // But usually the structure is strict.
+        // Let's assume strict structure but skip if port doesn't match
+        i += 6;
+      }
     }
 
     return entries;
@@ -315,7 +421,7 @@ class DeviceQuery extends EventEmitter {
 
   _clearTimers() {
     if (this._timeoutId) { clearTimeout(this._timeoutId); this._timeoutId = null; }
-    if (this._earlyExitId) { clearTimeout(this._earlyExitId); this._earlyExitId = null; }
+    if (this._settleId) { clearTimeout(this._settleId); this._settleId = null; }
   }
 }
 
