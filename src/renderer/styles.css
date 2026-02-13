@@ -457,6 +457,30 @@ body {
   opacity: 1;
 }
 
+/* Release notes */
+.update-release-notes {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+  padding: 6px 0 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.update-release-notes ul {
+  margin: 0;
+  padding-left: 14px;
+  list-style: disc;
+}
+
+.update-release-notes li {
+  margin-bottom: 2px;
+}
+
+.update-release-notes p {
+  margin: 0;
+}
+
 /* Progress bar */
 .update-progress-bar {
   height: 3px;

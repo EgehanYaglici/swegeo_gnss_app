@@ -112,6 +112,8 @@ class PositionCard {
                     console.error('[PositionCard] Error sending LOG command:', e);
                 }
             }
+
+            window.dispatchEvent(new Event('log-changed'));
         };
 
         // Rate change handler

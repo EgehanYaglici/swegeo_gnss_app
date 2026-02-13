@@ -5,6 +5,7 @@ class UpdatePanel {
         this.btn = document.getElementById('update-check-btn');
         this.label = document.getElementById('update-check-label');
         this.expand = document.getElementById('update-expand');
+        this.releaseNotes = document.getElementById('update-release-notes');
         this.progressBar = document.getElementById('update-progress-bar');
         this.progressFill = document.getElementById('update-progress-fill');
         this.actions = document.getElementById('update-actions');
@@ -108,6 +109,13 @@ class UpdatePanel {
                 this._setLabel(`New version available — v${data.version}`, 'available');
                 this.btn.disabled = true;
                 this.expand.classList.add('visible');
+                // Release notes göster
+                if (data.releaseNotes) {
+                    this.releaseNotes.style.display = '';
+                    this.releaseNotes.innerHTML = this._formatReleaseNotes(data.releaseNotes);
+                } else {
+                    this.releaseNotes.style.display = 'none';
+                }
                 this.actions.style.display = '';
                 this.btnDownload.style.display = '';
                 this.btnDownload.disabled = false;
@@ -152,6 +160,36 @@ class UpdatePanel {
         this.btnInstall.disabled = true;
         this.btnInstall.textContent = 'Restarting...';
         try { await api.installUpdate(); } catch { }
+    }
+
+    // GitHub release notes'u sade HTML'e çevir
+    _formatReleaseNotes(notes) {
+        if (!notes) return '';
+        // HTML string gelebilir (GitHub API) veya düz metin
+        // Düz metin ise satır satır parse et
+        const isHtml = /<[a-z][\s\S]*>/i.test(notes);
+        if (isHtml) {
+            // HTML'den sadece text al, sadece liste elemanlarını göster
+            const div = document.createElement('div');
+            div.innerHTML = notes;
+            const items = div.querySelectorAll('li');
+            if (items.length > 0) {
+                return '<ul>' + Array.from(items).map(li =>
+                    `<li>${li.textContent.trim()}</li>`
+                ).join('') + '</ul>';
+            }
+            return `<p>${div.textContent.trim()}</p>`;
+        }
+        // Düz metin: "-" veya "\n" ile ayrılmış satırlar
+        const lines = notes.split('\n')
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+        if (lines.length === 0) return '';
+        const items = lines.map(l => {
+            const clean = l.replace(/^[-*•]\s*/, '');
+            return `<li>${clean}</li>`;
+        }).join('');
+        return `<ul>${items}</ul>`;
     }
 
     destroy() {

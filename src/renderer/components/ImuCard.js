@@ -173,6 +173,8 @@ class ImuCard {
           console.error('[ImuCard] Error subscribing:', e);
         }
       }
+
+      window.dispatchEvent(new Event('log-changed'));
     };
 
     // Rate change (only affects non-high-rate sources)

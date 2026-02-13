@@ -1,10 +1,10 @@
 const { EventEmitter } = require('events');
 
-const COMCONFIG_TIMEOUT_MS = 4000;
+const COMCONFIG_TIMEOUT_MS = 5000;
 const COMCONFIG_SETTLE_MS = 600;
-const ICOMCONFIG_TIMEOUT_MS = 4000;
+const ICOMCONFIG_TIMEOUT_MS = 5000;
 const ICOMCONFIG_SETTLE_MS = 600;
-const LOGLISTA_TIMEOUT_MS = 4000;
+const LOGLISTA_TIMEOUT_MS = 5000;
 const LOGLISTA_SETTLE_MS = 800;
 const LOGLISTA_COOLDOWN_MS = 1000;
 const RETRY_DELAY_MS = 500;
@@ -23,47 +23,72 @@ class DeviceQuery extends EventEmitter {
     this._settleId = null;
     this._resolve = null;
     this._loglistaCooldownUntil = 0;
+    this._lastLoglistaResult = null;
     this._retryCount = 0;
     this._retryTimer = null;
+
+    // Request queue: pending requests waiting for current one to finish
+    this._queue = [];
 
     this._lineHandler = (text) => this._onLine(text);
     this._serial.on('line', this._lineHandler);
   }
 
   requestComconfig() {
-    return this._requestWithRetry('COMCONFIG');
+    return this._enqueue('COMCONFIG');
   }
 
   requestIcomconfig() {
-    return this._requestWithRetry('ICOMCONFIG');
+    return this._enqueue('ICOMCONFIG');
   }
 
   requestLoglista() {
-    return this._requestWithRetry('LOGLISTA');
+    return this._enqueue('LOGLISTA');
   }
 
-  _requestWithRetry(type) {
+  // Enqueue a request — if nothing is in-flight, start immediately
+  _enqueue(type) {
     return new Promise((resolve) => {
-      this._retryCount = 0;
-      this._doRequest(type, resolve);
+      // LOGLISTA cooldown: return cached result immediately without queuing
+      if (type === 'LOGLISTA') {
+        const now = Date.now();
+        if (now < this._loglistaCooldownUntil && this._lastLoglistaResult) {
+          resolve(this._lastLoglistaResult);
+          return;
+        }
+      }
+
+      // Deduplicate: if same type already waiting in queue, reuse its promise
+      const existing = this._queue.find(q => q.type === type);
+      if (existing) {
+        // Piggyback on existing queued request
+        const origResolve = existing.resolve;
+        existing.resolve = (result) => {
+          origResolve(result);
+          resolve(result);
+        };
+        return;
+      }
+
+      this._queue.push({ type, resolve, retryCount: 0 });
+      this._processQueue();
     });
   }
 
-  _doRequest(type, finalResolve) {
-    if (this._mode) {
-      this._finish(this._emptyResult(type));
-    }
+  // Process next item in queue if not busy
+  _processQueue() {
+    if (this._mode) return; // busy, will be called again from _finish
+    if (this._queue.length === 0) return;
 
-    if (type === 'LOGLISTA') {
-      const now = Date.now();
-      if (now < this._loglistaCooldownUntil) {
-        finalResolve(this._lastLoglistaResult || { entries: [] });
-        return;
-      }
-    }
+    const { type, resolve, retryCount } = this._queue.shift();
+    this._startRequest(type, resolve, retryCount);
+  }
 
+  _startRequest(type, finalResolve, retryCount) {
+    this._retryCount = retryCount || 0;
     this._mode = type;
     this._buffer = [];
+
     this._resolve = (result) => {
       const isEmpty = type === 'LOGLISTA'
         ? (!result.entries || result.entries.length === 0)
@@ -73,7 +98,7 @@ class DeviceQuery extends EventEmitter {
         this._retryCount++;
         if (this._retryTimer) clearTimeout(this._retryTimer);
         this._retryTimer = setTimeout(() => {
-          this._doRequest(type, finalResolve);
+          this._startRequest(type, finalResolve, this._retryCount);
         }, RETRY_DELAY_MS);
         return;
       }
@@ -84,6 +109,9 @@ class DeviceQuery extends EventEmitter {
       }
 
       finalResolve(result);
+
+      // Process next item in queue
+      this._processQueue();
     };
 
     const cmd = type === 'COMCONFIG' ? 'LOG COMCONFIG ONCE'
@@ -117,6 +145,7 @@ class DeviceQuery extends EventEmitter {
     this._serial.removeListener('line', this._lineHandler);
     this._clearTimers();
     if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
+    this._queue = [];
   }
 
   _onLine(text) {
@@ -139,7 +168,6 @@ class DeviceQuery extends EventEmitter {
     if (trimmed.startsWith('$')) return;
 
     const upper = trimmed.toUpperCase();
-
 
     if (upper.includes('LOGLISTA') || upper.includes('ICOMCONFIG')) return;
     if (upper.startsWith('#INSPVA') || upper.startsWith('#BESTPOS') || upper.startsWith('#BESTVEL')) return;
@@ -193,7 +221,6 @@ class DeviceQuery extends EventEmitter {
 
     const upper = trimmed.toUpperCase();
     if (upper.includes('COMCONFIG') || upper.includes('ICOMCONFIG')) return;
-    // Only filter if the line strictly STARTS with these logs (ignoring the LOGLISTA content itself)
     if (upper.startsWith('#INSPVA') || upper.startsWith('#BESTPOS') || upper.startsWith('#BESTVEL')) return;
     if (upper.startsWith('$INSPVA') || upper.startsWith('$BESTPOS') || upper.startsWith('$BESTVEL')) return;
 
@@ -221,16 +248,13 @@ class DeviceQuery extends EventEmitter {
     const ICOM_REGEX = /^ICOM\d+$/i;
 
     for (const line of lines) {
-      // Handle both raw lines "COM1 9600..." and message format "...;COM1,9600..."
       let data = line.trim();
       if (data.includes(';')) {
-        data = data.split(';')[1]; // Take part after header
+        data = data.split(';')[1];
       }
 
-      // Try comma-separated (standard standard) vs space-separated (abbreviated)
       let tokens = data.includes(',') ? data.split(',').map(t => t.trim()) : data.split(/\s+/);
 
-      // Remove CRC if present (*1234abcd)
       if (tokens.length > 0) {
         tokens[tokens.length - 1] = tokens[tokens.length - 1].split('*')[0];
       }
@@ -245,25 +269,17 @@ class DeviceQuery extends EventEmitter {
         const type = 'serial';
         let baud = null, inMode = null, outMode = null;
 
-        // Standard COMCONFIG: port, baud, parity, data, stop, hand, echo, break, rx_type, tx_type
         if (tokens.length >= 2 && /^\d+$/.test(tokens[1])) {
           baud = tokens[1];
         }
 
-        // Try to find RX/TX types if present (usually indices 8 and 9 if baud is 1)
-        // But tokens might be mixed. Let's look for known keywords or positions.
-        // COMCONFIG format: 
-        // 1: baud, 2: parity, 3: data, 4: stop, 5: hand, 6: echo, 7: break, 8: rx, 9: tx
         if (tokens.length >= 9) {
-          // Assume standard position logic if comma separated
           if (data.includes(',')) {
-            // tokens[8] is rx, tokens[9] is tx
             if (tokens[8]) inMode = tokens[8];
             if (tokens[9]) outMode = tokens[9];
           }
         }
 
-        // Fallback to regex search if positional failed or strictly looking for "IN:..." tags
         if (!inMode) {
           const inMatch = line.match(/IN:(\S+)/i);
           if (inMatch) inMode = inMatch[1];
@@ -273,7 +289,6 @@ class DeviceQuery extends EventEmitter {
           if (outMatch) outMode = outMatch[1];
         }
 
-        // Fallback for abbreviated "COM1 9600 N 8 1 N CTS ON ALL ALL"
         if (!inMode && tokens.length > 8) inMode = tokens[8];
         if (!outMode && tokens.length > 9) outMode = tokens[9];
 
@@ -302,7 +317,6 @@ class DeviceQuery extends EventEmitter {
       }
 
       let tokens = data.includes(',') ? data.split(',').map(t => t.trim()) : data.split(/\s+/);
-      // Remove CRC
       if (tokens.length > 0) {
         tokens[tokens.length - 1] = tokens[tokens.length - 1].split('*')[0];
       }
@@ -316,19 +330,14 @@ class DeviceQuery extends EventEmitter {
 
         let protocol = null, tcpPort = null, inMode = null, outMode = null;
 
-        // ICOMCONFIG format: port, protocol, protocol_port, ...
-        // e.g. ICOM1,TCP,3001,ALL,ALL...
         if (tokens.length >= 2) protocol = tokens[1];
         if (tokens.length >= 3) tcpPort = tokens[2];
 
-        // Try positions
         if (data.includes(',')) {
-          // tokens[4] input, tokens[5] output
           if (tokens.length > 4) inMode = tokens[4];
           if (tokens.length > 5) outMode = tokens[5];
         }
 
-        // Fallbacks
         const portMatch = line.match(/:(\d+)/);
         if (!tcpPort && portMatch) tcpPort = portMatch[1];
 
@@ -351,12 +360,10 @@ class DeviceQuery extends EventEmitter {
       return numA - numB;
     });
 
-    console.log('[DeviceQuery] Parsed ICOM ports:', ports);
     return ports;
   }
 
   _parseLoglista(lines) {
-    console.log('[DeviceQuery] Parsing LOGLISTA lines:', lines);
     const entries = [];
 
     let payload = '';
@@ -393,18 +400,10 @@ class DeviceQuery extends EventEmitter {
       const extra = parseFloat(tokens[i + 4]) || 0;
       const hold = tokens[i + 5];
 
-      // Check if port is valid (e.g. COM1, ICOM1)
       if (PORT_REGEX.test(port)) {
         entries.push({ port, msg, mode, period, extra, hold });
-        i += 6;
-      } else {
-        // If not a valid port, maybe we are misaligned? 
-        // Try to skip one token and continue? Or just break?
-        // For now, just increment by 1 to search for next valid port?
-        // But usually the structure is strict.
-        // Let's assume strict structure but skip if port doesn't match
-        i += 6;
       }
+      i += 6;
     }
 
     return entries;
@@ -417,6 +416,7 @@ class DeviceQuery extends EventEmitter {
     this._buffer = [];
     this._resolve = null;
     if (resolve) resolve(result);
+    // Note: _processQueue is called inside the resolve callback above
   }
 
   _clearTimers() {

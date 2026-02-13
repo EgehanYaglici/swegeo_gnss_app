@@ -109,6 +109,7 @@ class SatelliteCard {
             }
             // Update main toggle state based on active sources
             this._syncToggleState();
+            window.dispatchEvent(new Event('log-changed'));
         };
 
         this.api.onData('satellites', (data) => this.onData(data));
