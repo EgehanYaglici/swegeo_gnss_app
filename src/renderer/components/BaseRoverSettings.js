@@ -173,14 +173,14 @@ class BaseRoverSettings {
 
   _toggleBaseSections() {
     const isBase = this._role === 'BASE';
-    this.fixSection?.classList.toggle('hidden', !isBase);
-    this.rightCol?.classList.toggle('hidden', !isBase);
+    this.fixSection?.classList.toggle('collapsed', !isBase);
+    this.rightCol?.classList.toggle('collapsed', !isBase);
     this._refreshOverview();
   }
 
   _toggleFixInputs() {
-    this.fixPosInputs?.classList.toggle('hidden', this._fixMode !== 'position');
-    this.fixBaseInputs?.classList.toggle('hidden', this._fixMode !== 'base');
+    this.fixPosInputs?.classList.toggle('collapsed', this._fixMode !== 'position');
+    this.fixBaseInputs?.classList.toggle('collapsed', this._fixMode !== 'base');
   }
 
   // --- RTCM List ---

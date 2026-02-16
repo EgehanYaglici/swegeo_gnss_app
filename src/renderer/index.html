@@ -5,11 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SWEGEO GNSS Monitor</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600;700&family=Roboto:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap&subset=latin-ext"
-    rel="stylesheet">
+  <!-- Fonts are bundled locally in assets/fonts/ — no CDN dependency -->
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -151,7 +147,7 @@
           <div class="card" id="position-card">
             <div class="card-header">
               <div class="card-title-group">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -216,18 +212,18 @@
               <div class="card-title-group">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g transform="rotate(-45 12 12)">
-                    <rect x="9" y="9" width="6" height="6" rx="1" fill="#3B82F6" />
-                    <path d="M2 10H8V14H2C1.44772 14 1 13.5523 1 13V11C1 10.4477 1.44772 10 2 10Z" fill="#3B82F6" />
+                    <rect x="9" y="9" width="6" height="6" rx="1" fill="#114D88" />
+                    <path d="M2 10H8V14H2C1.44772 14 1 13.5523 1 13V11C1 10.4477 1.44772 10 2 10Z" fill="#114D88" />
                     <path d="M16 10H22C22.5523 10 23 10.4477 23 11V13C23 13.5523 22.5523 14 22 14H16V10Z"
-                      fill="#3B82F6" />
+                      fill="#114D88" />
                     <rect x="3" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
                     <rect x="5.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
                     <rect x="16.5" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
                     <rect x="19" y="11" width="2" height="2" rx="0.5" fill="white" fill-opacity="0.4" />
-                    <rect x="11" y="15" width="2" height="2" fill="#3B82F6" />
-                    <path d="M8.5 17C8.5 17 9.5 19.5 12 19.5C14.5 19.5 15.5 17 15.5 17" stroke="#3B82F6"
+                    <rect x="11" y="15" width="2" height="2" fill="#114D88" />
+                    <path d="M8.5 17C8.5 17 9.5 19.5 12 19.5C14.5 19.5 15.5 17 15.5 17" stroke="#114D88"
                       stroke-width="2" stroke-linecap="round" />
-                    <circle cx="12" cy="18" r="1" fill="#3B82F6" />
+                    <circle cx="12" cy="18" r="1" fill="#114D88" />
                   </g>
                 </svg>
                 <h3>Satellites</h3>
@@ -255,7 +251,7 @@
           <div class="card" id="imu-card">
             <div class="card-header">
               <div class="card-title-group">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="2" y1="12" x2="22" y2="12" />
                   <path
@@ -322,7 +318,7 @@
           <div class="card" id="device-monitor-card">
             <div class="card-header">
               <div class="card-title-group">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
                   <rect x="2" y="3" width="20" height="14" rx="2" />
                   <line x1="8" y1="21" x2="16" y2="21" />
                   <line x1="12" y1="17" x2="12" y2="21" />
@@ -381,7 +377,7 @@
           <div class="card" id="rtk-card">
             <div class="card-header">
               <div class="card-title-row">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
                   <path d="M5 12.55a11 11 0 0 1 14.08 0" />
                   <path d="M1.42 9a16 16 0 0 1 21.16 0" />
                   <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
@@ -543,48 +539,49 @@
       <div id="page-settings" class="page">
         <div class="page-header">
           <h1>Settings</h1>
-        </div>
 
-        <!-- Settings Tab Bar -->
-        <div class="settings-tabs">
-          <button class="settings-tab active" data-settings-tab="messages">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Messages
-          </button>
-          <button class="settings-tab" data-settings-tab="base-rover">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-              <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-              <line x1="12" y1="20" x2="12.01" y2="20" />
-            </svg>
-            Base / Rover
-          </button>
-          <button class="settings-tab" data-settings-tab="ethernet">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-              <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-              <line x1="6" y1="6" x2="6.01" y2="6" />
-              <line x1="6" y1="18" x2="6.01" y2="18" />
-            </svg>
-            Ethernet
-          </button>
-          <button class="settings-tab" data-settings-tab="ins">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-              <line x1="9" y1="4" x2="9" y2="20" />
-              <line x1="15" y1="4" x2="15" y2="20" />
-            </svg>
-            INS
-          </button>
-          <button class="settings-tab" data-settings-tab="heading">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-            </svg>
-            Heading
-          </button>
+          <!-- Settings Tab Bar (Moved to Header) -->
+          <div class="settings-tabs">
+            <div class="settings-tab-indicator" id="settings-tab-indicator"></div>
+            <button class="settings-tab active" data-settings-tab="messages">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Messages
+            </button>
+            <button class="settings-tab" data-settings-tab="base-rover">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+              Base / Rover
+            </button>
+            <button class="settings-tab" data-settings-tab="ethernet">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                <line x1="6" y1="6" x2="6.01" y2="6" />
+                <line x1="6" y1="18" x2="6.01" y2="18" />
+              </svg>
+              Ethernet
+            </button>
+            <button class="settings-tab" data-settings-tab="ins">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <line x1="9" y1="4" x2="9" y2="20" />
+                <line x1="15" y1="4" x2="15" y2="20" />
+              </svg>
+              INS
+            </button>
+            <button class="settings-tab" data-settings-tab="heading">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+              </svg>
+              Heading
+            </button>
+          </div>
         </div>
 
         <!-- Settings Tab Panels -->
@@ -592,8 +589,9 @@
 
           <!-- Messages Tab Panel -->
           <div class="settings-panel active" id="settings-panel-messages">
-            <!-- Messages Toolbar -->
-            <div class="messages-toolbar">
+
+            <!-- Floating Toolbar Card -->
+            <div class="msg-floating-toolbar">
               <div class="messages-search-wrapper">
                 <svg class="messages-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2">
@@ -602,132 +600,162 @@
                 </svg>
                 <input type="text" id="msg-search" class="messages-search" placeholder="Search messages...">
               </div>
-              <div class="messages-filter-tabs">
-                <button class="msg-filter-btn active" data-filter="all">All</button>
-                <button class="msg-filter-btn" data-filter="nmea">NMEA</button>
-                <button class="msg-filter-btn" data-filter="ascii">ASCII</button>
-                <button class="msg-filter-btn" data-filter="binary">Binary</button>
-              </div>
             </div>
 
-            <!-- Messages Table -->
-            <div class="messages-table-container">
-              <table class="messages-table" id="messages-table">
-                <thead>
-                  <tr>
-                    <th class="col-enable">Enable</th>
-                    <th class="col-name">Message</th>
-                    <th class="col-desc">Description</th>
-                    <th class="col-hz">Hz</th>
-                    <th class="col-active">Active On</th>
-                  </tr>
-                </thead>
-                <tbody id="messages-table-body">
-                </tbody>
-              </table>
-            </div>
+            <!-- 3-Column Message Cards -->
+            <div class="msg-columns-area">
 
-            <!-- Port Selection -->
-            <div class="messages-port-section">
-              <div class="port-tabs">
-                <button class="port-tab active" data-port-tab="serial">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="2" width="20" height="8" rx="2" />
-                    <rect x="2" y="14" width="20" height="8" rx="2" />
-                    <line x1="6" y1="6" x2="6.01" y2="6" />
-                    <line x1="6" y1="18" x2="6.01" y2="18" />
-                  </svg>
-                  Serial <span class="port-tab-count" id="port-count-serial">0</span>
-                </button>
-                <button class="port-tab" data-port-tab="ethernet">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 11a9 9 0 0 1 18 0" />
-                    <path d="M8 11a5 5 0 0 1 10 0" />
-                    <circle cx="13" cy="11" r="1" />
-                    <line x1="13" y1="12" x2="13" y2="20" />
-                  </svg>
-                  Ethernet <span class="port-tab-count" id="port-count-ethernet">0</span>
-                </button>
-              </div>
-              <div class="port-slides-wrapper">
-                <div class="port-slide active" id="port-slide-serial">
-                  <div class="port-group-chips" id="msg-port-serial">
-                    <span class="port-placeholder">Connect to discover ports...</span>
+              <!-- NMEA Column -->
+              <div class="msg-column-card" data-category-card="nmea">
+                <div class="msg-column-header">
+                  <div class="msg-column-icon msg-col-icon-nmea">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
                   </div>
+                  <span class="msg-column-title">NMEA</span>
+                  <span class="msg-column-count" id="msg-count-nmea">0</span>
                 </div>
-                <div class="port-slide" id="port-slide-ethernet">
-                  <div class="port-group-chips" id="msg-port-ethernet">
-                    <span class="port-placeholder">Connect to discover ICOM ports...</span>
-                  </div>
+                <div class="msg-column-subheader">
+                  <span>MSG</span><span>HZ</span><span>ACTIVE</span>
                 </div>
+                <div class="msg-column-body" id="msg-col-nmea"></div>
               </div>
+
+              <!-- ASCII Column -->
+              <div class="msg-column-card" data-category-card="ascii">
+                <div class="msg-column-header">
+                  <div class="msg-column-icon msg-col-icon-ascii">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 18 22 12 16 6" />
+                      <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                  </div>
+                  <span class="msg-column-title">ASCII</span>
+                  <span class="msg-column-count" id="msg-count-ascii">0</span>
+                </div>
+                <div class="msg-column-subheader">
+                  <span>MSG</span><span>HZ</span><span>ACTIVE</span>
+                </div>
+                <div class="msg-column-body" id="msg-col-ascii"></div>
+              </div>
+
+              <!-- Binary Column -->
+              <div class="msg-column-card" data-category-card="binary">
+                <div class="msg-column-header">
+                  <div class="msg-column-icon msg-col-icon-binary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                      <line x1="8" y1="6" x2="16" y2="6" />
+                      <line x1="8" y1="10" x2="16" y2="10" />
+                      <line x1="8" y1="14" x2="12" y2="14" />
+                    </svg>
+                  </div>
+                  <span class="msg-column-title">BINARY</span>
+                  <span class="msg-column-count" id="msg-count-binary">0</span>
+                </div>
+                <div class="msg-column-subheader">
+                  <span>MSG</span><span>HZ</span><span>ACTIVE</span>
+                </div>
+                <div class="msg-column-body" id="msg-col-binary"></div>
+              </div>
+
             </div>
 
-            <!-- Bottom Action Bar -->
-            <div class="messages-actions">
-              <div id="msg-status" class="messages-status">Ready</div>
-              <div class="messages-action-buttons">
-                <button id="btn-msg-refresh" class="btn-secondary btn-sm" title="Refresh ports and status">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <!-- New Control Dock -->
+            <div class="control-dock">
+              <!-- Left: Port Trigger -->
+              <button id="btn-port-trigger" class="dock-port-trigger" title="Manage connected ports">
+                <div class="dock-port-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+                <div class="dock-port-info">
+                  <span class="dock-port-label">PORTS</span>
+                  <span id="dock-port-summary" class="dock-port-summary">No ports selected</span>
+                </div>
+              </button>
+
+              <!-- Right: Actions -->
+              <div class="dock-actions">
+                <div id="msg-status" class="messages-status">Ready</div>
+                <div class="dock-separator"></div>
+
+                <button id="btn-msg-refresh" class="dock-action-btn" title="Refresh ports">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="23 4 23 10 17 10" />
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                   </svg>
-                  Refresh
                 </button>
-                <button id="btn-msg-stop-all" class="btn-danger btn-sm" title="Stop all messages on selected ports">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+                <button id="btn-msg-stop-all" class="dock-action-btn btn-danger-ghost" title="Stop all">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   </svg>
-                  Stop All
                 </button>
-                <button id="btn-msg-apply" class="btn-primary btn-sm" title="Apply checked messages">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+                <button id="btn-msg-apply" class="dock-action-btn btn-primary-glass" title="Apply changes">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  Apply
+                  <span>Apply</span>
                 </button>
-                <button id="btn-msg-save" class="btn-success btn-sm" title="Save configuration to device">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+                <button id="btn-msg-save" class="dock-action-btn btn-success-glass" title="Save to flash">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                     <polyline points="17 21 17 13 7 13 7 21" />
                     <polyline points="7 3 7 8 15 8" />
                   </svg>
-                  Save
                 </button>
               </div>
             </div>
 
-            <!-- Message Info Panel (slide-in from right) -->
-            <div id="msg-info-panel" class="msg-info-panel">
-              <div class="msg-info-header">
-                <div>
-                  <h3 id="msg-info-title" class="msg-info-title"></h3>
-                  <span id="msg-info-desc" class="msg-info-desc"></span>
-                </div>
-                <button id="btn-msg-info-close" class="msg-info-close">&times;</button>
+            <!-- Port Selection Tray (Popover) -->
+            <div id="port-selection-tray" class="port-selection-tray">
+              <div class="tray-header">
+                <span class="tray-title">Active Ports</span>
+                <span class="tray-badge" id="tray-total-count">0</span>
               </div>
-              <div class="msg-info-body">
-                <table class="msg-fields-table">
-                  <colgroup>
-                    <col>
-                    <col>
-                    <col>
-                    <col>
-                    <col>
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Field</th>
-                      <th>Value</th>
-                      <th>Type</th>
-                      <th>Unit</th>
-                      <th>Note</th>
-                    </tr>
-                  </thead>
-                  <tbody id="msg-info-fields"></tbody>
-                </table>
+
+              <div class="tray-scroll-area">
+                <!-- Serial Ports -->
+                <div class="tray-section">
+                  <div class="tray-section-header">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="2" width="20" height="8" rx="2" />
+                      <rect x="2" y="14" width="20" height="8" rx="2" />
+                      <line x1="6" y1="6" x2="6.01" y2="6" />
+                      <line x1="6" y1="18" x2="6.01" y2="18" />
+                    </svg>
+                    <span>SERIAL</span>
+                  </div>
+                  <div id="tray-port-serial" class="tray-grid">
+                    <div class="tray-empty">No serial ports found</div>
+                  </div>
+                </div>
+
+                <!-- Ethernet Ports -->
+                <div class="tray-section">
+                  <div class="tray-section-header">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                      <line x1="12" y1="20" x2="12.01" y2="20" />
+                    </svg>
+                    <span>ICOM / ETHERNET</span>
+                  </div>
+                  <div id="tray-port-ethernet" class="tray-grid">
+                    <div class="tray-empty">No ICOM ports found</div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Message Info Panels are created dynamically as floating panels -->
           </div>
 
           <!-- Base/Rover Tab Panel -->
@@ -796,7 +824,7 @@
                 </div>
 
                 <!-- Fix Mode (BASE only) -->
-                <div class="settings-section" id="br-fix-section">
+                <div class="settings-section collapsible" id="br-fix-section">
                   <div class="settings-section-title">Base Positioning</div>
                   <div class="br-fix-radios">
                     <label class="br-radio-label"><input type="radio" name="br-fix" value="auto" checked> FIX
@@ -806,7 +834,7 @@
                     <label class="br-radio-label"><input type="radio" name="br-fix" value="none"> FIX NONE</label>
                     <label class="br-radio-label"><input type="radio" name="br-fix" value="base"> FIX BASE (avg)</label>
                   </div>
-                  <div id="br-fix-pos-inputs" class="br-fix-inputs hidden">
+                  <div id="br-fix-pos-inputs" class="br-fix-inputs collapsible collapsed">
                     <div class="form-group"><label>Latitude (°)</label><input type="number" id="br-lat"
                         class="form-control" step="0.00000001" value="0"></div>
                     <div class="form-group"><label>Longitude (°)</label><input type="number" id="br-lon"
@@ -814,7 +842,7 @@
                     <div class="form-group"><label>Height (m)</label><input type="number" id="br-height"
                         class="form-control" step="0.001" value="0"></div>
                   </div>
-                  <div id="br-fix-base-inputs" class="br-fix-inputs hidden">
+                  <div id="br-fix-base-inputs" class="br-fix-inputs collapsible collapsed">
                     <div class="form-group"><label>Avg Seconds</label><input type="number" id="br-avg-secs"
                         class="form-control" value="60" min="5" max="3600"></div>
                     <div class="form-group"><label>Avg Meters</label><input type="number" id="br-avg-meters"
@@ -843,7 +871,7 @@
               </div>
 
               <!-- Right Column: RTCM Messages (full height) -->
-              <div class="settings-right-col" id="br-right-col">
+              <div class="settings-right-col collapsible-h" id="br-right-col">
                 <div class="settings-section" id="br-rtcm-section"
                   style="flex:1;display:flex;flex-direction:column;overflow:hidden">
                   <div class="settings-section-title">RTCM Output Messages</div>
@@ -1206,7 +1234,7 @@
                   <label class="hdg-ck-label">
                     <input type="checkbox" id="hdg-ck-fixed"> Use Fixed Baseline
                   </label>
-                  <div id="hdg-baseline-inputs" class="hdg-baseline-grid hidden">
+                  <div id="hdg-baseline-inputs" class="hdg-baseline-grid collapsible collapsed">
                     <div class="form-group">
                       <label>Baseline</label>
                       <div class="hdg-inline-field">
@@ -1444,7 +1472,11 @@
     <div class="modal">
       <div class="modal-header">
         <h2>Connect to Device</h2>
-        <button class="modal-close">&times;</button>
+        <button class="modal-close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <!-- Connection Type Tabs -->
@@ -1460,7 +1492,12 @@
             <label>Port</label>
             <div class="port-row">
               <select id="serial-port" class="form-control"></select>
-              <button id="btn-refresh-ports" class="btn-sm" title="Refresh">&#x21bb;</button>
+              <button id="btn-refresh-ports" class="btn-sm" title="Refresh ports">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+              </button>
             </div>
           </div>
           <div class="form-group">
@@ -1497,18 +1534,24 @@
             <input type="number" id="udp-listen-port" class="form-control" value="3002" placeholder="Local port">
           </div>
           <div class="form-group">
-            <label>Remote Host (optional)</label>
+            <label>Remote Host <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
             <input type="text" id="udp-remote-host" class="form-control" placeholder="IP for sending commands">
           </div>
           <div class="form-group">
-            <label>Remote Port (optional)</label>
+            <label>Remote Port <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
             <input type="number" id="udp-remote-port" class="form-control" placeholder="Port for sending commands">
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="btn-cancel-connect">Cancel</button>
-        <button class="btn-primary" id="btn-do-connect">Connect</button>
+        <button class="btn-primary" id="btn-do-connect">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Connect
+        </button>
       </div>
     </div>
   </div>

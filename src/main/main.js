@@ -106,12 +106,17 @@ function createWindow() {
     messageRouter.on(cap, capabilityHandlers[cap]);
   }
 
+  // Forward parsed message stream to renderer (for info panel live values)
+  const onLogData = (data) => safeSend('log:data', data);
+  messageRouter.on('log', onLogData);
+
   // Clean up listeners when window closes
   mainWindow.on('closed', () => {
     serialManager.removeListener('line', onLine);
     serialManager.removeListener('line', onGgaLine);
     serialManager.removeListener('connection', onConnection);
     serialManager.removeListener('binary', onBinaryFrame);
+    messageRouter.removeListener('log', onLogData);
     for (const cap of Object.keys(capabilityHandlers)) {
       messageRouter.removeListener(cap, capabilityHandlers[cap]);
     }

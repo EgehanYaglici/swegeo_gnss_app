@@ -56,6 +56,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('binary:parsed', listener);
     return () => ipcRenderer.removeListener('binary:parsed', listener);
   },
+  onLogData: (cb) => {
+    const listener = (_, data) => cb(data);
+    ipcRenderer.on('log:data', listener);
+    return () => ipcRenderer.removeListener('log:data', listener);
+  },
 
   // NTRIP Client
   connectNtrip: (config) => ipcRenderer.invoke('ntrip:connect', config),

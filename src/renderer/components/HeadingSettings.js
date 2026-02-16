@@ -60,7 +60,7 @@ class HeadingSettings {
     // Fixed baseline
     this.ckFixed?.addEventListener('change', () => {
       this._useFixed = this.ckFixed.checked;
-      this.baselineInputs?.classList.toggle('hidden', !this._useFixed);
+      this.baselineInputs?.classList.toggle('collapsed', !this._useFixed);
       this._updatePreview();
     });
     this.spinBaseline?.addEventListener('input', () => {

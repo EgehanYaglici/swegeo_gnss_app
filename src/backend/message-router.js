@@ -135,12 +135,31 @@ class MessageRouter extends EventEmitter {
     const { id: msgId, payload, crc } = frame;
     if (msgId == null || !payload) return;
 
+    let emittedForLog = false;
     for (const [cap, subs] of Object.entries(this._subs)) {
       for (const sub of subs) {
         if (sub.msgId === msgId) {
           this._processBinary(cap, sub.sourceName, msgId, payload, crc);
+          emittedForLog = true;
         }
       }
+    }
+
+    // If no capability subscriber, still emit log for info panel live updates
+    if (!emittedForLog) {
+      try {
+        const parsed = parseBinaryPayload(msgId, payload, crc);
+        if (parsed) {
+          const flat = this._flattenFields(parsed);
+          this.emit('log', {
+            timestamp: new Date(),
+            type: 'binary',
+            schemaKey: String(msgId),
+            fields: flat,
+            source_name: String(msgId)
+          });
+        }
+      } catch { }
     }
   }
 
@@ -152,6 +171,13 @@ class MessageRouter extends EventEmitter {
       const flat = this._flattenFields(parsed);
       const normalized = this._normalize(capability, sourceName, msgId, flat);
       this.emit(capability, normalized);
+      this.emit('log', {
+        timestamp: new Date(),
+        type: 'binary',
+        schemaKey: sourceName,
+        fields: flat,
+        source_name: sourceName
+      });
     } catch (e) {
       console.error(`[Router] Binary error id=${msgId}:`, e.message);
     }
@@ -183,11 +209,28 @@ class MessageRouter extends EventEmitter {
       const talkerAndType = parts[0].substring(1);
       const sentenceType = talkerAndType.length >= 3 ? talkerAndType.slice(-3) : talkerAndType;
 
+      let emittedForLog = false;
       for (const [cap, subs] of Object.entries(this._subs)) {
         for (const sub of subs) {
           if (typeof sub.msgId === 'string' && sentenceType === sub.msgId) {
             this._processNmea(cap, sub.sourceName, sentenceType, line);
+            emittedForLog = true;
           }
+        }
+      }
+
+      // Emit log for info panel even if not subscribed for a capability
+      if (!emittedForLog) {
+        const parsed = this._parseNmeaLine(line);
+        if (parsed) {
+          const flat = this._flattenFields(parsed);
+          this.emit('log', {
+            timestamp: new Date(),
+            type: 'nmea',
+            schemaKey: sentenceType,
+            fields: flat,
+            source_name: sentenceType
+          });
         }
       }
     } catch { }
@@ -206,19 +249,33 @@ class MessageRouter extends EventEmitter {
       // Check schema for canonical name
       const schemaInfo = this._findSchemaForTag(tag);
       if (schemaInfo) {
-        // Fix: Use the canonical TAG for routing if available (e.g. BESTPOSA), 
-        // fallback to name (e.g. GGA) for NMEA or if tag matches name.
-        // The display config expects the TAG/ID, not the human-readable description.
         tag = (schemaInfo.entry && schemaInfo.entry.tag)
           ? schemaInfo.entry.tag
           : schemaInfo.name;
       }
 
+      let emittedForLog = false;
       for (const [cap, subs] of Object.entries(this._subs)) {
         for (const sub of subs) {
           if (typeof sub.msgId === 'string' && tag === sub.msgId) {
             this._processAscii(cap, sub.sourceName, tag, line);
+            emittedForLog = true;
           }
+        }
+      }
+
+      // Emit log for info panel even if not subscribed for a capability
+      if (!emittedForLog) {
+        const parsed = this._parseAsciiLine(line);
+        if (parsed) {
+          const flat = this._flattenFields(parsed);
+          this.emit('log', {
+            timestamp: new Date(),
+            type: 'ascii',
+            schemaKey: tag,
+            fields: flat,
+            source_name: tag
+          });
         }
       }
     } catch (err) {
@@ -241,6 +298,13 @@ class MessageRouter extends EventEmitter {
 
       const normalized = this._normalize(capability, sourceName, sentenceType, flat);
       this.emit(capability, normalized);
+      this.emit('log', {
+        timestamp: new Date(),
+        type: 'nmea',
+        schemaKey: sentenceType,
+        fields: flat,
+        source_name: sourceName
+      });
     } catch (e) {
       console.error(`[Router] NMEA error ${sentenceType}:`, e.message);
     }
@@ -254,6 +318,13 @@ class MessageRouter extends EventEmitter {
       const flat = this._flattenFields(parsed);
       const normalized = this._normalize(capability, sourceName, tag, flat);
       this.emit(capability, normalized);
+      this.emit('log', {
+        timestamp: new Date(),
+        type: 'ascii',
+        schemaKey: tag,
+        fields: flat,
+        source_name: sourceName
+      });
     } catch (e) {
       console.error(`[Router] ASCII error ${tag}:`, e.message);
     }

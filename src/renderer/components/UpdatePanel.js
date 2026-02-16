@@ -162,14 +162,14 @@ class UpdatePanel {
         try { await api.installUpdate(); } catch { }
     }
 
-    // GitHub release notes'u sade HTML'e çevir
+    // Format GitHub release notes to clean HTML
     _formatReleaseNotes(notes) {
         if (!notes) return '';
-        // HTML string gelebilir (GitHub API) veya düz metin
-        // Düz metin ise satır satır parse et
+        // Can be HTML string (GitHub API) or plain text
+        // Plain text: parse line by line
         const isHtml = /<[a-z][\s\S]*>/i.test(notes);
         if (isHtml) {
-            // HTML'den sadece text al, sadece liste elemanlarını göster
+            // Extract only list items from HTML
             const div = document.createElement('div');
             div.innerHTML = notes;
             const items = div.querySelectorAll('li');
@@ -180,7 +180,7 @@ class UpdatePanel {
             }
             return `<p>${div.textContent.trim()}</p>`;
         }
-        // Düz metin: "-" veya "\n" ile ayrılmış satırlar
+        // Plain text: lines separated by "-" or "\n"
         const lines = notes.split('\n')
             .map(l => l.trim())
             .filter(l => l.length > 0);
