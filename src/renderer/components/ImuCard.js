@@ -62,7 +62,12 @@ class ImuCard {
     this.PURE_IMU_MESSAGES = new Set(['CORRIMUDATAB', 'CORRIMUDATASB', 'RAWIMUB', 'CORRIMUDATAA', 'RAWIMUA']);
 
     // INS messages (show PFD)
-    this.INS_MESSAGES = new Set(['INSATTB', 'INSATTA', 'INSPVAB', 'INSPVAA']);
+    this.INS_MESSAGES = new Set([
+      'INSATTB',  'INSATTA',
+      'INSPVAB',  'INSPVAA',
+      'INSPVASB', 'INSPVASA',
+      'INSPVAXB', 'INSPVAXA'
+    ]);
 
     // Visualization mode: 'imu' or 'ins'
     this._visualMode = 'ins';
@@ -186,6 +191,7 @@ class ImuCard {
           if (!this.HIGH_RATE_IMU.has(cmdName.toUpperCase())) {
             const period = 1.0 / Number(rate);
             await this.api.sendCommand(`LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`);
+            window.dispatchEvent(new Event('log-changed'));
           }
         }
       }
@@ -310,21 +316,9 @@ class ImuCard {
         const activeY = Math.abs(rateY) > DEAD_ZONE;
         const activeZ = Math.abs(rateZ) > DEAD_ZONE;
 
-        if (activeX) {
-          this._targetRoll += rateX * dt;
-        } else {
-          this._targetRoll *= 0.97;
-        }
-        if (activeY) {
-          this._targetPitch += rateY * dt;
-        } else {
-          this._targetPitch *= 0.97;
-        }
-        if (activeZ) {
-          this._targetYaw += rateZ * dt;
-        } else {
-          this._targetYaw *= 0.97;
-        }
+        if (activeX) this._targetRoll  += rateX * dt;
+        if (activeY) this._targetPitch += rateY * dt;
+        if (activeZ) this._targetYaw   += rateZ * dt;
 
         // Wrap angles to ±180
         this._targetRoll = ((this._targetRoll + 180) % 360 + 360) % 360 - 180;
@@ -812,21 +806,23 @@ class ImuCard {
       [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]
     ];
 
-    // Rotate and project vertices
+    // Rotate and project vertices (orthographic — no perspective distortion)
     const rotated = vertices.map(v => {
       let [x, y, z] = v;
+      // Yaw (Z-axis rotation)
       let x1 = x * Math.cos(yaw) - y * Math.sin(yaw);
       let y1 = x * Math.sin(yaw) + y * Math.cos(yaw);
       let z1 = z;
+      // Pitch (Y-axis rotation)
       let x2 = x1 * Math.cos(pitch) + z1 * Math.sin(pitch);
       let y2 = y1;
       let z2 = -x1 * Math.sin(pitch) + z1 * Math.cos(pitch);
+      // Roll (X-axis rotation)
       let x3 = x2;
       let y3 = y2 * Math.cos(roll) - z2 * Math.sin(roll);
       let z3 = y2 * Math.sin(roll) + z2 * Math.cos(roll);
-      const distance = 500;
-      const scale = distance / (distance + z3);
-      return [x3 * scale, y3 * scale, z3];
+      // Orthographic projection: ignore z3 for screen coords
+      return [x3, y3, z3];
     });
 
     // Draw cube faces with transparency for depth
@@ -962,10 +958,8 @@ class ImuCard {
     let y3 = y2 * Math.cos(roll) - z2 * Math.sin(roll);
     let z3 = y2 * Math.sin(roll) + z2 * Math.cos(roll);
 
-    // Perspective
-    const distance = 500;
-    const scale = distance / (distance + z3);
-    return [x3 * scale, y3 * scale, z3];
+    // Orthographic projection
+    return [x3, y3, z3];
   }
 
   _drawSlipBall(ctx, cx, cy, radius) {
@@ -1058,4 +1052,5 @@ class ImuCard {
     // Return the name/tag for ASCII, or string ID for binary
     return name;
   }
+
 }

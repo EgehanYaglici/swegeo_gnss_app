@@ -10,6 +10,16 @@ window.onerror = function (message, source, lineno, colno, error) {
   alert(`App Error: ${message}\nCheck console for details.`);
 };
 
+// Dismiss splash after animation completes
+const splashOverlay = document.getElementById('splash-overlay');
+if (splashOverlay) {
+  splashOverlay.addEventListener('animationend', (e) => {
+    if (e.animationName === 'splashFadeOut') {
+      splashOverlay.classList.add('splash-hidden');
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM Content Loaded');
 

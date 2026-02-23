@@ -62,7 +62,11 @@ class InsSettings {
   _bindEvents() {
     // Direction radios
     document.querySelectorAll('input[name="ins-dir-x"]').forEach(r =>
-      r.addEventListener('change', () => { this._dirX = r.value; this._recompute(); }));
+      r.addEventListener('change', () => {
+        this._dirX = r.value;
+        this._updateDirYConstraints();
+        this._recompute();
+      }));
     document.querySelectorAll('input[name="ins-dir-y"]').forEach(r =>
       r.addEventListener('change', () => { this._dirY = r.value; this._recompute(); }));
 
@@ -135,10 +139,42 @@ class InsSettings {
     window.addEventListener('resize', () => { if (this._loaded) this._resizeCanvas(); });
   }
 
+  _updateDirYConstraints() {
+    // X and Y axes must be orthogonal — disable Y options that share the same axis as X
+    // e.g. if X is '+X', disable '+X' and '-X' for Y (dot product != 0 means parallel/anti-parallel)
+    const xVec = INS_DIR_MAP[this._dirX];
+    const yRadios = document.querySelectorAll('input[name="ins-dir-y"]');
+    let currentYValid = false;
+
+    yRadios.forEach(r => {
+      const yVec = INS_DIR_MAP[r.value];
+      // dot product: if abs(dot) > 0.5, they are parallel/anti-parallel — incompatible
+      const dot = Math.abs(xVec[0]*yVec[0] + xVec[1]*yVec[1] + xVec[2]*yVec[2]);
+      const incompatible = dot > 0.5;
+      r.disabled = incompatible;
+      const label = r.closest('label');
+      if (label) label.classList.toggle('ins-radio-disabled', incompatible);
+      if (r.checked && !incompatible) currentYValid = true;
+    });
+
+    // If current Y is now disabled, pick first valid option
+    if (!currentYValid) {
+      for (const r of yRadios) {
+        if (!r.disabled) {
+          r.checked = true;
+          this._dirY = r.value;
+          break;
+        }
+      }
+    }
+  }
+
   onPageActivated() {
     this._loaded = true;
     this._startListener();
     this._resizeCanvas();
+    this._updateDirYConstraints();
+    this._recompute();
     this._updatePreview();
   }
 
@@ -188,45 +224,56 @@ class InsSettings {
   }
 
   _recompute() {
-    // Compute RBV angles from chosen directions
-    // Simple lookup for common combos
-    const x = this._dirX;
-    const y = this._dirY;
-    const rbv = this._rbvFromDirs(x, y);
-    this._cmdXYZ = rbv;
+    // Compute RBV raw angles from chosen IMU directions
+    const [rx, ry, rz] = this._rbvFromDirs(this._dirX, this._dirY);
+
+    // Build rotation matrix R = Rz(rz) @ Rx(rx) @ Ry(ry) for 3D visualization
+    this._R_body_to_vehicle = this._mat3Mul(this._Rz(rz), this._mat3Mul(this._Rx(rx), this._Ry(ry)));
+
+    // Hardware command convention: Y is negated (matches Python _finalize_rbv_angles)
+    const y_cmd = Math.abs(-ry + 180) < 1e-4 ? 180 : -ry;
+    this._cmdXYZ = [this._clean(rx), this._clean(y_cmd), this._clean(rz)];
+
     if (this.rbvLabel) {
-      this.rbvLabel.textContent = `RBV: X=${rbv[0].toFixed(1)}° Y=${rbv[1].toFixed(1)}° Z=${rbv[2].toFixed(1)}°`;
+      this.rbvLabel.textContent = `RBV: X=${this._cmdXYZ[0].toFixed(1)}° Y=${this._cmdXYZ[1].toFixed(1)}° Z=${this._cmdXYZ[2].toFixed(1)}°`;
     }
     this._drawScene();
     this._updatePreview();
   }
 
+  _clean(v) {
+    // Round near-zero and near-180 values
+    if (Math.abs(v) < 1e-4) return 0;
+    if (Math.abs(Math.abs(v) - 180) < 1e-4) return v < 0 ? -180 : 180;
+    return Math.round(v * 1000) / 1000;
+  }
+
   _rbvFromDirs(xCode, yCode) {
-    // Common direction combinations → known RBV angles
-    const key = `${xCode},${yCode}`;
-    const table = {
-      '+X,+Y': [0,0,0],    '-X,+Y': [0,0,180],  '+X,-Y': [0,0,0],
-      '+Y,+X': [0,0,-90],  '+Y,-X': [0,0,90],   '-Y,+X': [0,0,90],
-      '+X,+Z': [0,90,0],   '+X,-Z': [0,-90,0],
-      '+Z,+Y': [90,0,0],   '-Z,+Y': [-90,0,0],
-      '+Y,+Z': [0,0,-90],  '+Z,+X': [0,0,90],
-      '+X,+Y': [0,0,0],    '-X,-Y': [0,0,180],
-    };
-    if (table[key]) return table[key];
+    // Hardcoded special cases from Python reference (before Y negate)
+    // These are raw (rx, ry, rz) angles — Y negate applied in _recompute
+    if (xCode === '-X' && yCode === '+Y') return [0,  180, 0];   // Leftward, Forward
+    if (xCode === '-Z' && yCode === '+X') return [-90, 0,  90];  // Downward, Rightward
+    if (xCode === '+Z' && yCode === '-Y') return [-90, 0, -90];  // Upward, Backward
+    if (xCode === '-Z' && yCode === '-Y') return [ 90, 0, -90];  // Downward, Backward
 
-    // Brute force search
-    const target_x = INS_DIR_MAP[xCode];
-    const target_y = INS_DIR_MAP[yCode];
-    if (!target_x || !target_y) return [0, 0, 0];
+    // Brute force search: R = Rz(rz) @ Rx(rx) @ Ry(ry)  (intrinsic Z→X→Y, matching Python)
+    const xV = INS_DIR_MAP[xCode];
+    const yV = INS_DIR_MAP[yCode];
+    if (!xV || !yV) return [0, 0, 0];
 
-    const angles = [-180, -90, 0, 90, 180];
-    for (const rz of angles) {
-      for (const rx of angles) {
-        for (const ry of angles) {
+    // Search order matches Python reference: rx first [-90,90,0], ry [0,90,-90,180,-180], rz [90,-90,180,-180,0]
+    const rxAngles = [-90, 90, 0];
+    const ryAngles = [0, 90, -90, 180, -180];
+    const rzAngles = [90, -90, 180, -180, 0];
+
+    for (const rz of rzAngles) {
+      for (const rx of rxAngles) {
+        for (const ry of ryAngles) {
           const R = this._mat3Mul(this._Rz(rz), this._mat3Mul(this._Rx(rx), this._Ry(ry)));
+          // R columns: R*[1,0,0] should be xV, R*[0,1,0] should be yV
           const ex = this._mat3Vec(R, [1, 0, 0]);
           const ey = this._mat3Vec(R, [0, 1, 0]);
-          if (this._vecClose(ex, target_x) && this._vecClose(ey, target_y)) {
+          if (this._vecClose(ex, xV) && this._vecClose(ey, yV)) {
             return [rx, ry, rz];
           }
         }
@@ -236,7 +283,7 @@ class InsSettings {
   }
 
   _vecClose(a, b) {
-    return Math.abs(a[0]-b[0]) < 0.01 && Math.abs(a[1]-b[1]) < 0.01 && Math.abs(a[2]-b[2]) < 0.01;
+    return Math.abs(a[0]-b[0]) < 1e-4 && Math.abs(a[1]-b[1]) < 1e-4 && Math.abs(a[2]-b[2]) < 1e-4;
   }
 
   // --- Canvas ---
@@ -287,6 +334,24 @@ class InsSettings {
     ctx.stroke();
   }
 
+  _drawArrowHead(ctx, from3d, to3d, color) {
+    const a = this._project(from3d);
+    const b = this._project(to3d);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 1) return;
+    const ux = dx / len, uy = dy / len;
+    const size = 7;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - ux*size - uy*size*0.4, b.y - uy*size + ux*size*0.4);
+    ctx.lineTo(b.x - ux*size + uy*size*0.4, b.y - uy*size - ux*size*0.4);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
   _drawScene() {
     const ctx = this.ctx;
     if (!ctx || !this._cw) return;
@@ -295,7 +360,14 @@ class InsSettings {
     ctx.fillStyle = '#1A1D23';
     ctx.fillRect(0, 0, this._cw, this._ch);
 
-    // Ground grid
+    // Vehicle dimensions: Y=Forward, X=Right, Z=Up
+    // Scene origin (0,0,0) = Rear Axle Center (matches vehicle frame for lever arm spinboxes)
+    const vl = 3.0, vw = 1.6, vh = 0.6;
+    const hx = vw/2, hz = vh;
+    // o = rear-axle-center offset: vehicle spans Y from 0 to vl in world
+    const oy = 0; // rear axle at Y=0, front at Y=vl
+
+    // Ground grid centered on rear axle
     const N = 4;
     const step = 0.5;
     ctx.setLineDash([]);
@@ -304,47 +376,126 @@ class InsSettings {
       this._drawLine3D(ctx, [-N*step, i*step, 0], [N*step, i*step, 0], 'rgba(255,255,255,0.08)', 1);
     }
 
-    // Vehicle box: 3.0 x 1.6 x 0.6 (Y forward, X right, Z up)
-    const vl = 3.0, vw = 1.6, vh = 0.6;
-    const hx = vw/2, hy = vl/2, hz = vh;
+    // Vehicle box: rear axle at Y=0, front at Y=vl
     const verts = [
-      [-hx,-hy,0],[ hx,-hy,0],[ hx, hy,0],[-hx, hy,0],
-      [-hx,-hy,hz],[hx,-hy,hz],[hx, hy,hz],[-hx, hy,hz],
+      [-hx, oy,    0], [ hx, oy,    0], [ hx, oy+vl, 0], [-hx, oy+vl, 0],
+      [-hx, oy,   hz], [ hx, oy,   hz], [ hx, oy+vl,hz], [-hx, oy+vl,hz],
     ];
     const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
     for (const [a, b] of edges) {
       this._drawLine3D(ctx, verts[a], verts[b], 'rgba(255,255,255,0.25)', 1.5);
     }
 
-    // Vehicle axes at front center
-    const front = [0, hy, hz/2];
-    const axLen = 0.6;
-    this._drawLine3D(ctx, front, [front[0]+axLen, front[1], front[2]], '#EF4444', 2);
-    this._drawLine3D(ctx, front, [front[0], front[1]+axLen, front[2]], '#10B981', 2);
-    this._drawLine3D(ctx, front, [front[0], front[1], front[2]+axLen], '#3B82F6', 2);
-
-    // Axis labels
+    // Vehicle frame axes at front-center (for reference, small)
+    const front = [0, oy+vl, hz/2];
+    const axLen = 0.5;
+    this._drawLine3D(ctx, front, [front[0]+axLen, front[1], front[2]], '#EF4444', 1.5);
+    this._drawLine3D(ctx, front, [front[0], front[1]+axLen, front[2]], '#10B981', 1.5);
+    this._drawLine3D(ctx, front, [front[0], front[1], front[2]+axLen], '#3B82F6', 1.5);
     const px = this._project([front[0]+axLen+0.1, front[1], front[2]]);
     const py = this._project([front[0], front[1]+axLen+0.1, front[2]]);
     const pz = this._project([front[0], front[1], front[2]+axLen+0.1]);
-    ctx.font = 'bold 11px Segoe UI, sans-serif';
+    ctx.font = '10px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#EF4444'; ctx.fillText('X', px.x, px.y);
     ctx.fillStyle = '#10B981'; ctx.fillText('Y', py.x, py.y);
     ctx.fillStyle = '#3B82F6'; ctx.fillText('Z', pz.x, pz.y);
 
-    // IMU chip (small box at center)
-    const imuSize = 0.25;
-    const imuH = 0.03;
-    const iv = [
-      [-imuSize,-imuSize,hz], [imuSize,-imuSize,hz],
-      [imuSize,imuSize,hz], [-imuSize,imuSize,hz],
-      [-imuSize,-imuSize,hz+imuH], [imuSize,-imuSize,hz+imuH],
-      [imuSize,imuSize,hz+imuH], [-imuSize,imuSize,hz+imuH],
+    // IMU chip — rotated using R_body_to_vehicle = Rz(rz) @ Rx(rx) @ Ry(ry)
+    // R maps IMU body axes to vehicle frame axes
+    const R = this._R_body_to_vehicle || [[1,0,0],[0,1,0],[0,0,1]];
+    const rotIMU = (v) => this._mat3Vec(R, v);
+    // Extract vehicle-frame directions of IMU body axes
+    const xDir = rotIMU([1, 0, 0]);  // IMU X in vehicle frame
+    const yDir = rotIMU([0, 1, 0]);  // IMU Y in vehicle frame
+    const zDir = rotIMU([0, 0, 1]);  // IMU Z in vehicle frame
+
+    const imuSize = 0.28;
+    const imuH = 0.08;
+    const imuZ = hz + 0.01;
+    // Place IMU chip at center of vehicle (Y = vl/2 from rear axle)
+    const chipCenter = [0, oy + vl/2, imuZ + imuH / 2];
+
+    // 8 local corners of IMU box (before rotation): half-extents imuSize x imuSize x imuH/2
+    const localCorners = [
+      [-imuSize, -imuSize, -imuH/2], [ imuSize, -imuSize, -imuH/2],
+      [ imuSize,  imuSize, -imuH/2], [-imuSize,  imuSize, -imuH/2],
+      [-imuSize, -imuSize,  imuH/2], [ imuSize, -imuSize,  imuH/2],
+      [ imuSize,  imuSize,  imuH/2], [-imuSize,  imuSize,  imuH/2],
     ];
-    for (const [a, b] of edges) {
-      this._drawLine3D(ctx, iv[a], iv[b], '#F59E0B', 1);
+    // Transform corners: rotate then offset to chipCenter
+    const iv = localCorners.map(c => {
+      const r = rotIMU(c);
+      return [chipCenter[0]+r[0], chipCenter[1]+r[1], chipCenter[2]+r[2]];
+    });
+
+    // Draw IMU box top face filled
+    const imuFace = [4,5,6,7];
+    ctx.beginPath();
+    const topPts = imuFace.map(i => this._project(iv[i]));
+    ctx.moveTo(topPts[0].x, topPts[0].y);
+    topPts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(245,158,11,0.2)';
+    ctx.fill();
+    // Draw all 12 edges
+    const imuEdges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    for (const [a, b] of imuEdges) {
+      this._drawLine3D(ctx, iv[a], iv[b], '#F59E0B', 1.5);
     }
+
+    // Direction arrows from chip center — IMU body frame X/Y/Z axes in vehicle frame
+    // Arrow origin at chip center (center of mass)
+    const arrowOrigin = chipCenter;
+    const arrowLen = 0.5;
+    const imuXTip = [arrowOrigin[0]+xDir[0]*arrowLen, arrowOrigin[1]+xDir[1]*arrowLen, arrowOrigin[2]+xDir[2]*arrowLen];
+    const imuYTip = [arrowOrigin[0]+yDir[0]*arrowLen, arrowOrigin[1]+yDir[1]*arrowLen, arrowOrigin[2]+yDir[2]*arrowLen];
+    const imuZTip = [arrowOrigin[0]+zDir[0]*arrowLen, arrowOrigin[1]+zDir[1]*arrowLen, arrowOrigin[2]+zDir[2]*arrowLen];
+
+    // Direction label lookup: code → human label
+    const DIR_LABELS = {'+X':'Rightward','-X':'Leftward','+Y':'Forward','-Y':'Backward','+Z':'Upward','-Z':'Downward'};
+
+    // Draw IMU X arrow (red)
+    this._drawLine3D(ctx, arrowOrigin, imuXTip, '#EF4444', 2.5);
+    this._drawArrowHead(ctx, arrowOrigin, imuXTip, '#EF4444');
+    // Draw IMU Y arrow (green)
+    this._drawLine3D(ctx, arrowOrigin, imuYTip, '#10B981', 2.5);
+    this._drawArrowHead(ctx, arrowOrigin, imuYTip, '#10B981');
+    // Draw IMU Z arrow (blue) — derived automatically from cross(X,Y)
+    this._drawLine3D(ctx, arrowOrigin, imuZTip, '#3B82F6', 2.5);
+    this._drawArrowHead(ctx, arrowOrigin, imuZTip, '#3B82F6');
+
+    // Labels
+    const ext = arrowLen + 0.16;
+    const imuXLabelPt = this._project([arrowOrigin[0]+xDir[0]*ext, arrowOrigin[1]+xDir[1]*ext, arrowOrigin[2]+xDir[2]*ext]);
+    const imuYLabelPt = this._project([arrowOrigin[0]+yDir[0]*ext, arrowOrigin[1]+yDir[1]*ext, arrowOrigin[2]+yDir[2]*ext]);
+    const imuZLabelPt = this._project([arrowOrigin[0]+zDir[0]*ext, arrowOrigin[1]+zDir[1]*ext, arrowOrigin[2]+zDir[2]*ext]);
+    ctx.font = 'bold 9px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#EF4444';
+    ctx.fillText(`X → ${DIR_LABELS[this._dirX] || this._dirX}`, imuXLabelPt.x, imuXLabelPt.y - 2);
+    ctx.fillStyle = '#10B981';
+    ctx.fillText(`Y → ${DIR_LABELS[this._dirY] || this._dirY}`, imuYLabelPt.x, imuYLabelPt.y - 2);
+    ctx.fillStyle = '#3B82F6';
+    ctx.fillText('Z (auto)', imuZLabelPt.x, imuZLabelPt.y - 2);
+
+    // Rear axle marker — origin (0,0,0) = rear axle center
+    const rearP = this._project([0, oy, 0]);
+    ctx.beginPath();
+    ctx.arc(rearP.x, rearP.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFBE00';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,190,0,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Rear axle line across vehicle width
+    this._drawLine3D(ctx, [-hx, oy, 0], [hx, oy, 0], '#FFBE00', 2);
+    // Label
+    const rearLabelP = this._project([0, oy - 0.18, 0]);
+    ctx.font = '9px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FFBE00';
+    ctx.fillText('Rear Axle Origin (0,0,0)', rearLabelP.x, rearLabelP.y);
 
     // ANT1 (yellow)
     this._drawAntenna(ctx, this._ant1, '#FFBE00', 'P');
@@ -361,9 +512,11 @@ class InsSettings {
   }
 
   _drawAntenna(ctx, pos, color, label) {
-    // Draw antenna as circle + vertical line
-    const base = [pos[0], pos[1], 0.6];
-    const top = [pos[0], pos[1], 0.6 + 0.35];
+    // pos = [X, Y, Z] in vehicle frame (origin = rear axle center)
+    // Draw a vertical antenna mast from pos[2] upward
+    const antZ = pos[2] > 0 ? pos[2] : 0.65; // fallback to roof height
+    const base = [pos[0], pos[1], antZ];
+    const top = [pos[0], pos[1], antZ + 0.35];
     this._drawLine3D(ctx, base, top, color, 2);
 
     const tp = this._project(top);

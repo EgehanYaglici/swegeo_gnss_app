@@ -85,18 +85,28 @@ class SourceSelector {
         const menu = document.createElement('div');
         menu.className = 'source-selector-menu';
 
-        // Rate selector at top
+        // Rate selector at top — segmented buttons
         const rateSection = document.createElement('div');
         rateSection.className = 'source-selector-rate';
+        const rates = [1, 5, 10];
         rateSection.innerHTML = `
-      <label>Rate:</label>
-      <select class="rate-select">
-        <option value="1" ${this.currentRate === 1 ? 'selected' : ''}>1 Hz</option>
-        <option value="5" ${this.currentRate === 5 ? 'selected' : ''}>5 Hz</option>
-        <option value="10" ${this.currentRate === 10 ? 'selected' : ''}>10 Hz</option>
-      </select>
-    `;
+          <label>Rate</label>
+          <div class="rate-btn-group">
+            ${rates.map(r => `<button class="rate-btn${this.currentRate === r ? ' active' : ''}" data-rate="${r}">${r} Hz</button>`).join('')}
+          </div>
+        `;
         menu.appendChild(rateSection);
+
+        // Rate button click handler
+        rateSection.querySelectorAll('.rate-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const r = parseFloat(btn.dataset.rate);
+                this.currentRate = r;
+                rateSection.querySelectorAll('.rate-btn').forEach(b => b.classList.toggle('active', b === btn));
+                if (this.onRateChanged) this.onRateChanged(this.currentRate);
+            });
+        });
 
         // Separator
         const sep1 = document.createElement('div');
@@ -146,15 +156,6 @@ class SourceSelector {
             sep.className = 'source-selector-separator';
             menu.appendChild(sep);
         }
-
-        // Rate change handler
-        const rateSelect = rateSection.querySelector('.rate-select');
-        rateSelect.addEventListener('change', (e) => {
-            this.currentRate = parseFloat(e.target.value);
-            if (this.onRateChanged) {
-                this.onRateChanged(this.currentRate);
-            }
-        });
 
         // Position menu below pill
         const rect = this.pill.getBoundingClientRect();

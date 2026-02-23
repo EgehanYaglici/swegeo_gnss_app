@@ -128,6 +128,7 @@ class PositionCard {
                     const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
                     console.log(`Sending rate command: ${logCmd}`);
                     await this.api.sendCommand(logCmd);
+                    window.dispatchEvent(new Event('log-changed'));
                 }
             } catch (err) {
                 console.error('[PositionCard] Error changing rate:', err);

@@ -795,6 +795,96 @@
             {"field": "week", "label": "Week", "format": "int"},
             {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
           ]
+        },
+
+        "INSPVASB": {
+          "id": 508,
+          "type": "binary",
+          "description": "INS PVA Short Header (Binary) - Roll/Pitch/Yaw + PVA",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"  // uint32 → ref_table lookup via extra_fields
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSPVASA": {
+          "tag": "INSPVASA",
+          "type": "ascii",
+          "description": "INS PVA Short Header (ASCII) - Roll/Pitch/Yaw + PVA",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "status"
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "week", "label": "Week", "format": "int"},
+            {"field": "seconds_of_week", "label": "ToW", "format": "float", "unit": "s", "decimals": 3}
+          ]
+        },
+
+        "INSPVAXB": {
+          "id": 1465,
+          "type": "binary",
+          "description": "INS PVA + Std Deviations (Binary) - Roll/Pitch/Yaw + sigmas",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "ins_status"  // uint32 → ref_table lookup via extra_fields
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "roll_sigma", "label": "Roll σ", "format": "float", "unit": "°", "decimals": 4},
+            {"field": "pitch_sigma", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 4},
+            {"field": "azimuth_sigma", "label": "Yaw σ", "format": "float", "unit": "°", "decimals": 4}
+          ]
+        },
+
+        "INSPVAXA": {
+          "tag": "INSPVAXA",
+          "type": "ascii",
+          "description": "INS PVA + Std Deviations (ASCII) - Roll/Pitch/Yaw + sigmas",
+          "field_mapping": {
+            "roll": "roll_deg",
+            "pitch": "pitch_deg",
+            "yaw": "azimuth_deg",
+            "ins_status": "ins_status"
+          },
+          "extra_fields": [
+            {"field": "latitude_deg", "label": "Lat", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "longitude_deg", "label": "Lon", "format": "float", "unit": "°", "decimals": 8},
+            {"field": "height_m", "label": "Alt", "format": "float", "unit": "m", "decimals": 3},
+            {"field": "north_velocity_ms", "label": "Vel N", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "east_velocity_ms", "label": "Vel E", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "up_velocity_ms", "label": "Vel U", "format": "float", "unit": "m/s", "decimals": 3},
+            {"field": "roll_sigma", "label": "Roll σ", "format": "float", "unit": "°", "decimals": 4},
+            {"field": "pitch_sigma", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 4},
+            {"field": "azimuth_sigma", "label": "Yaw σ", "format": "float", "unit": "°", "decimals": 4}
+          ]
         }
       }
     },

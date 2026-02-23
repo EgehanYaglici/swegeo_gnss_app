@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -12,6 +12,22 @@
 </head>
 
 <body>
+
+  <!-- Splash Screen -->
+  <div id="splash-overlay">
+    <div class="splash-inner">
+      <div class="splash-logo-wrap">
+        <img src="../../assets/swegeo_logo_preview.png" class="splash-logo" alt="SWEGEO" />
+        <div class="splash-ring"></div>
+        <div class="splash-ring2"></div>
+      </div>
+      <div class="splash-brand">SWEGEO</div>
+      <div class="splash-sub">GNSS Monitor</div>
+      <div class="splash-bar-wrap">
+        <div class="splash-bar"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Custom Title Bar -->
   <div id="titlebar">
@@ -1092,24 +1108,34 @@
                       <label class="ins-dir-label">IMU X axis points to vehicle:</label>
                       <div class="ins-dir-radios">
                         <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+X" checked>
-                          +X</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-X"> -X</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Y"> +Y</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Y"> -Y</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Z"> +Z</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Z"> -Z</label>
+                          Rightward (+X)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-X"> Leftward
+                          (-X)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Y"> Forward
+                          (+Y)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Y"> Backward
+                          (-Y)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="+Z"> Upward
+                          (+Z)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-x" value="-Z"> Downward
+                          (-Z)</label>
                       </div>
                     </div>
                     <div class="ins-dir-group">
                       <label class="ins-dir-label">IMU Y axis points to vehicle:</label>
                       <div class="ins-dir-radios">
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+X"> +X</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-X"> -X</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+X"> Rightward
+                          (+X)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-X"> Leftward
+                          (-X)</label>
                         <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+Y" checked>
-                          +Y</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Y"> -Y</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+Z"> +Z</label>
-                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Z"> -Z</label>
+                          Forward (+Y)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Y"> Backward
+                          (-Y)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="+Z"> Upward
+                          (+Z)</label>
+                        <label class="ins-radio-label"><input type="radio" name="ins-dir-y" value="-Z"> Downward
+                          (-Z)</label>
                       </div>
                     </div>
                   </div>
@@ -1119,6 +1145,9 @@
                 <!-- Lever Arms -->
                 <div class="settings-section">
                   <div class="settings-section-title">Antenna Lever Arms (m, vehicle frame)</div>
+                  <div class="ins-lever-origin-note">
+                    Origin = Rear Axle Center &nbsp;·&nbsp; X = Right &nbsp;·&nbsp; Y = Forward &nbsp;·&nbsp; Z = Up
+                  </div>
                   <div class="ins-lever-grid">
                     <div class="ins-lever-row">
                       <span class="ins-lever-name">ANT1 (Primary)</span>
@@ -1473,8 +1502,10 @@
       <div class="modal-header">
         <h2>Connect to Device</h2>
         <button class="modal-close" title="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round">
+            <line x1="1" y1="1" x2="13" y2="13" />
+            <line x1="13" y1="1" x2="1" y2="13" />
           </svg>
         </button>
       </div>
@@ -1493,9 +1524,10 @@
             <div class="port-row">
               <select id="serial-port" class="form-control"></select>
               <button id="btn-refresh-ports" class="btn-sm" title="Refresh ports">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                  <path d="M3 3v5h5"/>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
                 </svg>
               </button>
             </div>
@@ -1534,11 +1566,13 @@
             <input type="number" id="udp-listen-port" class="form-control" value="3002" placeholder="Local port">
           </div>
           <div class="form-group">
-            <label>Remote Host <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <label>Remote Host <span
+                style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
             <input type="text" id="udp-remote-host" class="form-control" placeholder="IP for sending commands">
           </div>
           <div class="form-group">
-            <label>Remote Port <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <label>Remote Port <span
+                style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
             <input type="number" id="udp-remote-port" class="form-control" placeholder="Port for sending commands">
           </div>
         </div>
@@ -1546,9 +1580,10 @@
       <div class="modal-footer">
         <button class="btn-secondary" id="btn-cancel-connect">Cancel</button>
         <button class="btn-primary" id="btn-do-connect">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
           Connect
         </button>

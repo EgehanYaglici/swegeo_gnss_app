@@ -192,7 +192,7 @@ class SolutionStatusCard {
     });
 
     this.logList.innerHTML = sorted.map((e, i) => {
-      const rate = e.period > 0 ? `${e.period}` : (e.mode === 'ONCHANGED' ? 'CHG' : e.mode);
+      const rate = e.period > 0 ? `${parseFloat((1.0 / e.period).toFixed(4)).toString()}` : (e.mode === 'ONCHANGED' ? 'CHG' : e.mode);
       const isHz = e.period > 0;
 
       let cardTags = '';

@@ -207,8 +207,8 @@ class EthernetSettings {
       while (waited < maxWait) {
         await new Promise(r => setTimeout(r, 500));
         waited += 500;
-        const hasIp = this._listenBuffer.some(l => /(STATIC|DHCP)/i.test(l));
-        const hasIcom = this._listenBuffer.some(l => /ICOM\d+/i.test(l));
+        const hasIp   = this._listenBuffer.some(l => /(STATIC|DHCP)/i.test(l));
+        const hasIcom = this._listenBuffer.some(l => /ICOM\d+/i.test(l) || /ICOMCONFIG/i.test(l));
         if (hasIp && hasIcom) break;
       }
     } catch (e) {
@@ -240,11 +240,16 @@ class EthernetSettings {
       const trimmed = line.trim();
 
       // IPCONFIG parse
-      const ipMatch = trimmed.match(/(ETHA?\w*)\s*,?\s*(STATIC|DHCP)/i);
+      // Format A (with iface): "ETHA STATIC 1.2.3.4 255.255.255.0 1.2.3.1"
+      // Format B (no iface):   "IPCONFIG STATIC 1.2.3.4 255.255.255.0 1.2.3.1"
+      const ipMatchA = trimmed.match(/^(ETH\w*)\s+(STATIC|DHCP)(.*)/i);
+      const ipMatchB = trimmed.match(/^IPCONFIG\s+(STATIC|DHCP)(.*)/i);
+      const ipMatch = ipMatchA || ipMatchB;
       if (ipMatch) {
-        const tokens = trimmed.split(/[\s,;]+/);
-        const iface = ipMatch[1];
-        const mode = ipMatch[2];
+        const iface = ipMatchA ? ipMatchA[1].toUpperCase() : 'ETHA';
+        const mode  = (ipMatchA ? ipMatchA[2] : ipMatchB[1]).toUpperCase();
+        const rest  = ipMatchA ? ipMatchA[3] : ipMatchB[2];
+        const tokens = rest.trim().split(/[\s,;]+/);
         let ip = '', mask = '', gw = '';
         for (const t of tokens) {
           if (/^\d+\.\d+\.\d+\.\d+$/.test(t)) {
@@ -269,18 +274,27 @@ class EthernetSettings {
       }
 
       // ICOM parse
-      const icomMatch = trimmed.match(/(ICOM\d+)\s+TCP\s+:?(\d+)/i);
+      // Format A: "ICOM1 TCP :3001 IN AUTO OUT AUTO"
+      // Format B: "ICOMCONFIG ICOM1 TCP :3001"  (echo of sent command)
+      const icomMatchA = trimmed.match(/^(ICOM\d+)\s+TCP\s+:?(\d+)(.*)/i);
+      const icomMatchB = trimmed.match(/^ICOMCONFIG\s+(ICOM\d+)\s+TCP\s+:?(\d+)(.*)/i);
+      const icomMatch = icomMatchA || icomMatchB;
       if (icomMatch) {
-        const afterStr = trimmed.substring(icomMatch.index);
-        const inMatch = afterStr.match(/IN[:\s]+(\S+)/i);
-        const outMatch = afterStr.match(/OUT[:\s]+(\S+)/i);
-        this._deviceIcomRows.push({
-          icom: icomMatch[1],
-          protocol: 'TCP',
-          port: icomMatch[2],
-          inMode: inMatch ? inMatch[1].replace(/[,;]/g, '') : '—',
-          outMode: outMatch ? outMatch[1].replace(/[,;]/g, '') : '—'
-        });
+        const icom = (icomMatchA ? icomMatchA[1] : icomMatchB[1]).toUpperCase();
+        const port = icomMatchA ? icomMatchA[2] : icomMatchB[2];
+        const rest = icomMatchA ? icomMatchA[3] : icomMatchB[3];
+        const inMatch  = rest.match(/\bIN\s+(\S+)/i);
+        const outMatch = rest.match(/\bOUT\s+(\S+)/i);
+        // Avoid duplicate entries (same ICOM from both echo + response)
+        if (!this._deviceIcomRows.some(r => r.icom === icom)) {
+          this._deviceIcomRows.push({
+            icom,
+            protocol: 'TCP',
+            port,
+            inMode:  inMatch  ? inMatch[1].replace(/[,;]/g, '')  : '—',
+            outMode: outMatch ? outMatch[1].replace(/[,;]/g, '') : '—'
+          });
+        }
       }
     }
 

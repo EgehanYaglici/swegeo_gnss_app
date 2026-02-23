@@ -27,6 +27,7 @@ class Dashboard {
         this.cardRegistry['Position'] = pos;
         this.cardRegistry['Satellites'] = sat;
         this.cardRegistry['Attitude'] = imu;
+
     }
 
     /**

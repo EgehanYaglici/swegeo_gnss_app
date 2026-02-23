@@ -10,6 +10,10 @@ class Sidebar {
     }
 
     init() {
+        // Pre-warm GPU layer on first interaction — do a silent toggle before user sees it
+        this._warmed = false;
+        this._warmupGPU();
+
         // Toggle expand/collapse
         this.toggleBtn?.addEventListener('click', () => this.toggle());
 
@@ -23,6 +27,20 @@ class Sidebar {
 
         // Set initial indicator position
         this.updateIndicator(0);
+    }
+
+    _warmupGPU() {
+        // Silently toggle without transition to create GPU compositing layer
+        // This prevents the "first click jank" in Electron/Chromium
+        requestAnimationFrame(() => {
+            this.sidebar.style.transition = 'none';
+            this.sidebar.classList.add('collapsed');
+            void this.sidebar.offsetWidth; // force reflow
+            this.sidebar.classList.remove('collapsed');
+            void this.sidebar.offsetWidth;
+            this.sidebar.style.transition = '';
+            this._warmed = true;
+        });
     }
 
     toggle() {
