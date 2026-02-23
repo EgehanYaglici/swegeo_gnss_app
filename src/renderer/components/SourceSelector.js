@@ -85,27 +85,48 @@ class SourceSelector {
         const menu = document.createElement('div');
         menu.className = 'source-selector-menu';
 
-        // Rate selector at top — segmented buttons
+        // Rate selector at top — segmented buttons + manual input
         const rateSection = document.createElement('div');
         rateSection.className = 'source-selector-rate';
         const rates = [1, 5, 10];
         rateSection.innerHTML = `
-          <label>Rate</label>
+          <label>RATE</label>
           <div class="rate-btn-group">
             ${rates.map(r => `<button class="rate-btn${this.currentRate === r ? ' active' : ''}" data-rate="${r}">${r} Hz</button>`).join('')}
+          </div>
+          <div class="rate-manual-group">
+            <input type="number" class="rate-manual-input" value="${this.currentRate}" min="0.1" max="100" step="0.1">
+            <span class="rate-manual-unit">Hz</span>
           </div>
         `;
         menu.appendChild(rateSection);
 
-        // Rate button click handler
+        // Preset button clicks — sync to manual input
         rateSection.querySelectorAll('.rate-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const r = parseFloat(btn.dataset.rate);
                 this.currentRate = r;
                 rateSection.querySelectorAll('.rate-btn').forEach(b => b.classList.toggle('active', b === btn));
+                const manualInput = rateSection.querySelector('.rate-manual-input');
+                if (manualInput) manualInput.value = r;
                 if (this.onRateChanged) this.onRateChanged(this.currentRate);
             });
+        });
+
+        // Manual input — sync to preset buttons
+        const manualInput = rateSection.querySelector('.rate-manual-input');
+        manualInput?.addEventListener('click', e => e.stopPropagation());
+        manualInput?.addEventListener('keydown', e => e.stopPropagation());
+        manualInput?.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const r = Math.max(0.1, Math.min(100, parseFloat(e.target.value) || 1));
+            e.target.value = r;
+            this.currentRate = r;
+            rateSection.querySelectorAll('.rate-btn').forEach(b =>
+                b.classList.toggle('active', parseFloat(b.dataset.rate) === r)
+            );
+            if (this.onRateChanged) this.onRateChanged(this.currentRate);
         });
 
         // Separator
@@ -157,14 +178,40 @@ class SourceSelector {
             menu.appendChild(sep);
         }
 
-        // Position menu below pill
+        // Smart positioning — flip up if not enough space below
         const rect = this.pill.getBoundingClientRect();
-        menu.style.position = 'absolute';
-        menu.style.top = `${rect.bottom + 4}px`;
-        menu.style.left = `${rect.left}px`;
-        menu.style.minWidth = `${rect.width}px`;
-
+        menu.style.position = 'fixed';
+        menu.style.minWidth = `${Math.max(rect.width, 200)}px`;
         document.body.appendChild(menu);
+
+        // Measure rendered height, then position
+        const menuHeight = menu.offsetHeight;
+        const menuWidth  = menu.offsetWidth;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        // Vertical: prefer below, flip up if needed
+        let top;
+        if (spaceBelow >= menuHeight + 8) {
+            top = rect.bottom + 4;
+        } else if (spaceAbove >= menuHeight + 8) {
+            top = rect.top - menuHeight - 4;
+        } else {
+            // Clamp to whichever side has more space
+            top = spaceBelow >= spaceAbove
+                ? Math.max(4, window.innerHeight - menuHeight - 4)
+                : Math.max(4, rect.top - menuHeight - 4);
+        }
+
+        // Horizontal: don't overflow right edge
+        let left = rect.left;
+        if (left + menuWidth > window.innerWidth - 8) {
+            left = window.innerWidth - menuWidth - 8;
+        }
+        left = Math.max(4, left);
+
+        menu.style.top  = `${top}px`;
+        menu.style.left = `${left}px`;
 
         // Close on outside click
         const closeMenu = (e) => {
