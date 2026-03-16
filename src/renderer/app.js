@@ -68,9 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing UpdatePanel...');
     const updatePanel = new UpdatePanel();
 
-    // Auto-scan ports when connection established
+    // Connection state changes
     window.api.onConnection((connected) => {
       messagesSettings.onConnectionChanged(connected);
+    });
+
+    // Device capabilities: connect → main.js runs LOG AUTHORIZATION ONCE and resolves here
+    // null = disconnected or unknown device → show all cards (default layout)
+    window.api.onDeviceCapabilities((caps) => {
+      dashboard.applyCapabilities(caps);
+      messagesSettings.applyCapabilities(caps);
     });
 
     // Settings tab switching & Sliding Indicator

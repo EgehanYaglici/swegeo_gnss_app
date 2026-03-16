@@ -90,11 +90,11 @@ function loadSchemaFile(filename) {
   }
 }
 
-// Log messages schema (unified ASCII + Binary)
+// SWEGEO device message schema (SS100D, SS100D-INS — unified ASCII + Binary)
 function getLogSchema() {
   if (!_logSchema) {
-    _logSchema = loadSchemaFile('log_messages.json5');
-    console.log(`[SchemaLoader] Loaded log schema: ${Object.keys(_logSchema).length} entries`);
+    _logSchema = loadSchemaFile('swegeo_messages.json5');
+    console.log(`[SchemaLoader] Loaded SWEGEO message schema: ${Object.keys(_logSchema).length} entries`);
   }
   return _logSchema;
 }
@@ -277,10 +277,12 @@ function getAllMessageDefinitions() {
     });
   }
 
-  // ASCII + Binary messages (log_messages.json5)
+  // SWEGEO device messages (swegeo_messages.json5)
   const log = getLogSchema();
   for (const [key, entry] of Object.entries(log)) {
     if (key.startsWith('_') || typeof entry !== 'object') continue;
+    // requires: null = her cihazda, "ins" = sadece INS'li, "dual_ant" = dual anten gerekli
+    const requires = entry.requires || null;
     if (entry.ascii) {
       const v = entry.ascii;
       results.push({
@@ -291,7 +293,8 @@ function getAllMessageDefinitions() {
         category: 'ascii',
         variant: 'ascii',
         defaultHz: v.default_rate_hz || 1,
-        isOnnew: !!v.on_new
+        isOnnew: !!v.on_new,
+        requires
       });
     }
     if (entry.binary) {
@@ -304,7 +307,8 @@ function getAllMessageDefinitions() {
         category: 'binary',
         variant: 'binary',
         defaultHz: v.default_rate_hz || 1,
-        isOnnew: !!v.on_new
+        isOnnew: !!v.on_new,
+        requires
       });
     }
   }

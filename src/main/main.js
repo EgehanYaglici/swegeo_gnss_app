@@ -70,7 +70,30 @@ function createWindow() {
 
   // Forward events to renderer (using safeSend to prevent errors on close)
   const onLine = (text, color) => safeSend('terminal:line', { text, color });
-  const onConnection = (connected) => safeSend('connection:status', connected);
+
+  const onConnection = async (connected) => {
+    safeSend('connection:status', connected);
+    if (connected) {
+      // Cihaz kimliğini belirle: InsEnable, DualAntEnable gibi alanları al
+      try {
+        const result = await deviceQuery.requestAuthorization();
+        const auth = result?.authorization ?? null;
+        const caps = auth ? {
+          ins:      auth.insEnable      === true,
+          dual_ant: auth.dualAntEnable  === true,
+          authMode: auth.authMode       || null,
+          detected: true
+        } : {
+          ins: false, dual_ant: false, authMode: null, detected: false
+        };
+        safeSend('device:capabilities', caps);
+      } catch {
+        safeSend('device:capabilities', { ins: false, dual_ant: false, authMode: null, detected: false });
+      }
+    } else {
+      safeSend('device:capabilities', null);
+    }
+  };
 
   serialManager.on('line', onLine);
   serialManager.on('connection', onConnection);

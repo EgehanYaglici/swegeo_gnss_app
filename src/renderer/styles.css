@@ -5237,8 +5237,28 @@ body {
   background: #ffffff;
   border-top: 1px solid #f1f5f9;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* Connection dialog — identifying device indicator */
+.conn-identify-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9099A9;
+}
+@keyframes connSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+.conn-spinner {
+  animation: connSpinnerRotate 0.9s linear infinite;
+  color: #114D88;
+  flex-shrink: 0;
 }
 
 /* ── Button Styles ── */
@@ -5296,9 +5316,17 @@ body {
    DEVICE MONITOR (EXPANDED) 
    ===================================================== */
 
-/* Span 2 columns in the grid */
+/* Span 2 columns in the grid (3-col layout, INS available) */
 #device-monitor-card {
   grid-column: span 2;
+}
+
+/* 2-col layout: Attitude card hidden, Position + Satellites yayılır */
+#cards-grid.layout-no-ins {
+  grid-template-columns: repeat(2, 1fr);
+}
+#cards-grid.layout-no-ins #device-monitor-card {
+  grid-column: span 1;
 }
 
 .dm-card-body-expanded {

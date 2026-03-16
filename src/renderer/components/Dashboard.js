@@ -28,6 +28,33 @@ class Dashboard {
         this.cardRegistry['Satellites'] = sat;
         this.cardRegistry['Attitude'] = imu;
 
+        // Card element references for layout management
+        this._imuCardEl  = document.getElementById('imu-card');
+        this._cardsGrid  = document.getElementById('cards-grid');
+    }
+
+    /**
+     * Apply device capability profile to the dashboard layout.
+     * Called when a device is identified (or on disconnect to reset).
+     *
+     * @param {object|null} caps - Capability flags from device detection.
+     *   caps.ins      {boolean} - INS / IMU available
+     *   caps.dual_ant {boolean} - Dual antenna / heading available
+     *   Pass null to reset to full layout (unknown device or disconnected).
+     */
+    applyCapabilities(caps) {
+        const hasIns = caps?.ins === true;
+
+        // Attitude card: visible only when INS is available
+        if (this._imuCardEl) {
+            this._imuCardEl.style.display = hasIns ? '' : 'none';
+        }
+
+        // Grid layout: 3-col with INS, 2-col without
+        // 2-col: Position + Satellites each take 50%, Device Monitor resets to 1 col
+        if (this._cardsGrid) {
+            this._cardsGrid.classList.toggle('layout-no-ins', !hasIns);
+        }
     }
 
     /**

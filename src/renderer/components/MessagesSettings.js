@@ -14,6 +14,7 @@ class MessagesSettings {
     this.categoryFilter = 'all';
     this._loaded = false;
     this._refreshing = false;
+    this._deviceCaps = null;    // null = unknown/show all, else { ins, dual_ant, ... }
 
     // DOM refs - Columns
     this.colNmea = document.getElementById('msg-col-nmea');
@@ -124,6 +125,25 @@ class MessagesSettings {
     }
   }
 
+  /**
+   * Apply device capability profile — filters message list accordingly.
+   * Called by app.js when device is identified or on disconnect.
+   * @param {object|null} caps  e.g. { ins: false, dual_ant: true }
+   *                            null = unknown device, show everything
+   */
+  applyCapabilities(caps) {
+    this._deviceCaps = caps;
+    if (this._loaded) this._renderMessages();
+  }
+
+  /**
+   * Returns true if a message should be visible for the current device caps.
+   */
+  _isMessageVisible(msg) {
+    if (!this._deviceCaps || !msg.requires) return true;
+    return this._deviceCaps[msg.requires] !== false;
+  }
+
   // --- Message Rendering (3 Columns) ---
 
   _renderMessages() {
@@ -141,7 +161,10 @@ class MessagesSettings {
     };
 
     for (const msg of this.messages) {
-      const catKey = msg.category || 'ascii'; // default fallack
+      // Cihaz capability'sine göre filtrele
+      if (!this._isMessageVisible(msg)) continue;
+
+      const catKey = msg.category || 'ascii'; // default fallback
       const target = categories[catKey];
       if (!target) continue;
 

@@ -24,6 +24,7 @@
     }
   },
   "BESTPOS": {
+    requires: null,
     "label": "Best Position",
     "description": "Outputs best position solution (no INS).",
     "ascii": {
@@ -333,6 +334,7 @@
     }
   },
   "BESTGNSSPOS": {
+    requires: null,
     "label": "Best GNSS Position",
     "description": "Best GNSS-only position output (no INS).",
     "ascii": {
@@ -641,6 +643,7 @@
     }
   },
   "BESTPVT": {
+    requires: null,
     "label": "Best PVT",
     "description": "Combined Position, Velocity and Time solution.",
     "ascii": {
@@ -1039,6 +1042,7 @@
     }
   },
   "BESTGNSSVEL": {
+    requires: null,
     "label": "Best GNSS Velocity",
     "description": "Best GNSS velocity solution (non-INS).",
     "ascii": {
@@ -1191,6 +1195,7 @@
     }
   },
   "HEADING": {
+    requires: "dual_ant",
     "label": "Heading / Attitude",
     "description": "Heading solution using dual antennas.",
     "ascii": {
@@ -1452,6 +1457,7 @@
     }
   },
   "HEADING2": {
+    requires: "dual_ant",
     "label": "Heading 2.0",
     "description": "Dual-antenna heading with extended metadata.",
     "ascii": {
@@ -1727,6 +1733,7 @@
     }
   },
   "RAWIMU": {
+    requires: "ins",
     "label": "Raw IMU",
     "description": "Raw IMU samples from M21 sensor.",
     "ascii": {
@@ -1946,6 +1953,7 @@
     }
   },
   "RAWIMUS": {
+    requires: "ins",
     "label": "Raw IMU (Short Header)",
     "description": "Short-header IMU raw observation data (ONNEW only).",
     "ascii": {
@@ -2165,6 +2173,7 @@
     }
   },
   "RAWIMUSX": {
+    requires: "ins",
     "label": "Raw IMU Extended (Short Header)",
     "description": "Extended short-header IMU raw data with IMU type information.",
     "ascii": {
@@ -2408,6 +2417,7 @@
     }
   },
   "RAWIMUX": {
+    requires: "ins",
     "label": "Raw IMU Extended (Long Header)",
     "description": "Extended IMU raw observation data with IMU info/type (long header).",
     "ascii": {
@@ -2651,6 +2661,7 @@
     }
   },
   "CORRIMUDATA": {
+    requires: "ins",
     "label": "Corrected IMU",
     "description": "Corrected IMU deltas.",
     "ascii": {
@@ -2817,6 +2828,7 @@
     }
   },
   "CORRIMUDATAS": {
+    requires: "ins",
     "label": "Corrected IMU (Short Header)",
     "description": "Short header version of CORRIMUDATA (ONNEW).",
     "ascii": {
@@ -2973,6 +2985,7 @@
     ]
   },
   "EFUSEID": {
+    requires: null,
     "label": "EFUSE ID",
     "description": "Outputs the device EFUSE identifier.",
     "ascii": {
@@ -3031,6 +3044,7 @@
     }
   },
   "INSATT": {
+    requires: "ins",
     "label": "INS Attitude",
     "description": "Outputs INS attitude (roll, pitch, azimuth).",
     "ascii": {
@@ -3154,6 +3168,7 @@
     }
   },
   "INSCALSTATUS": {
+    requires: "ins",
     "label": "INS Calibration Status",
     "description": "Outputs IMU calibration offsets and estimated uncertainties.",
     "ascii": {
@@ -3312,6 +3327,7 @@
     }
   },
   "INSPOS": {
+    requires: "ins",
     "label": "INS Position",
     "description": "Outputs INS-derived position in WGS84 coordinates.",
     "ascii": {
@@ -3436,6 +3452,7 @@
     }
   },
   "INSPTNLPJKS": {
+    requires: "ins",
     "label": "INS Projected IMU Output",
     "description": "IMU data after correction/projection (no binary support).",
     "ascii": {
@@ -3617,6 +3634,7 @@
     }
   },
   "INSPVA": {
+    requires: "ins",
     "label": "INS Position/Velocity/Attitude",
     "description": "Outputs INS position, velocity and attitude.",
     "ascii": {
@@ -3819,6 +3837,7 @@
     }
   },
   "INSPVAS": {
+    requires: "ins",
     "label": "INS Position/Velocity/Attitude (Short)",
     "description": "Short header version of INSPVA.",
     "ascii": {
@@ -4021,6 +4040,7 @@
     }
   },
   "INSPVAX": {
+    requires: "ins",
     "label": "INS Position/Velocity/Attitude + Std Dev",
     "description": "Outputs PVA plus standard deviation metrics.",
     "ascii": {
@@ -4360,6 +4380,7 @@
     }
   },
   "INSSPD": {
+    requires: "ins",
     "label": "INS Speed",
     "description": "Outputs horizontal and vertical speed plus track.",
     "ascii": {
@@ -4483,6 +4504,7 @@
     }
   },
   "INSSTDEV": {
+    requires: "ins",
     "label": "INS Standard Deviations",
     "description": "Outputs standard deviation of INS position, velocity and attitude.",
     "ascii": {
@@ -4681,6 +4703,7 @@
     }
   },
   "INSVEL": {
+    requires: "ins",
     "label": "INS Velocity (ENU)",
     "description": "Outputs velocity in local level ENU frame.",
     "ascii": {
@@ -4799,6 +4822,7 @@
     }
   },
   "MARKTIME": {
+    requires: "ins",
     "label": "IMU Event Time",
     "description": "Marks IMU data ready event time (EVENT_IN).",
     "ascii": {
@@ -4924,6 +4948,7 @@
     }
   },
   "MARK2TIME": {
+    requires: null,
     "label": "External Event Time",
     "description": "Marks external EVENT_IN trigger time (MARK2TIME).",
     "ascii": {
@@ -5045,6 +5070,7 @@
     }
   },
   "PSRVEL": {
+    requires: null,
     "label": "Pseudo-range Velocity",
     "description": "Instantaneous Doppler-derived velocity components.",
     "ascii": {
@@ -5190,6 +5216,7 @@
     }
   },
   "RADMI": {
+    requires: null,
     "label": "Wheel Speed (DMI)",
     "description": "Vehicle wheel speed and steering data from the Distance Measuring Instrument.",
     "ascii": {
@@ -5301,6 +5328,7 @@
     }
   },
   "IONUTC": {
+    requires: null,
     "label": "Ionospheric/UTC Parameters",
     "description": "Contains ionospheric (alpha/beta) and UTC polynomial parameters.",
     "ascii": {
@@ -5538,6 +5566,7 @@
     }
   },
   "TIME": {
+    requires: null,
     "label": "Time Offsets",
     "description": "Clock/UTC offsets and status.",
     "ascii": {
@@ -5716,6 +5745,7 @@
     }
   },
   "TRACKSTAT": {
+    requires: null,
     "label": "Tracking Status",
     "description": "Per-channel tracking status and measurements.",
     "ascii": {

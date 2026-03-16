@@ -30,6 +30,13 @@ contextBridge.exposeInMainWorld('api', {
   requestIcomconfig: () => ipcRenderer.invoke('device:icomconfig'),
   requestLoglista: () => ipcRenderer.invoke('device:loglista'),
 
+  // Device capabilities (emitted after connection + AUTHORIZATION query)
+  onDeviceCapabilities: (cb) => {
+    const listener = (_, caps) => cb(caps);
+    ipcRenderer.on('device:capabilities', listener);
+    return () => ipcRenderer.removeListener('device:capabilities', listener);
+  },
+
   // System network (for Ethernet settings)
   getNetworkInfo: () => ipcRenderer.invoke('system:networkInfo'),
   getArpTable: () => ipcRenderer.invoke('system:arpTable'),
