@@ -43,15 +43,17 @@ class Dashboard {
      *   Pass null to reset to full layout (unknown device or disconnected).
      */
     applyCapabilities(caps) {
-        const hasIns = caps?.ins === true;
+        // null = disconnected, detected:false = unknown/non-SWEGEO device
+        // In both cases show full layout — only hide when SWEGEO device is positively identified as no-INS
+        const known = caps !== null && caps !== undefined && caps.detected === true;
+        const hasIns = known ? caps.ins === true : true;
 
-        // Attitude card: visible only when INS is available
+        // Attitude card: hidden only when a detected device has no INS
         if (this._imuCardEl) {
             this._imuCardEl.style.display = hasIns ? '' : 'none';
         }
 
         // Grid layout: 3-col with INS, 2-col without
-        // 2-col: Position + Satellites each take 50%, Device Monitor resets to 1 col
         if (this._cardsGrid) {
             this._cardsGrid.classList.toggle('layout-no-ins', !hasIns);
         }

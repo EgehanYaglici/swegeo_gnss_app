@@ -140,7 +140,9 @@ class MessagesSettings {
    * Returns true if a message should be visible for the current device caps.
    */
   _isMessageVisible(msg) {
-    if (!this._deviceCaps || !msg.requires) return true;
+    // null = disconnected, detected:false = unknown device → show everything
+    if (!this._deviceCaps || !this._deviceCaps.detected) return true;
+    if (!msg.requires) return true;
     return this._deviceCaps[msg.requires] !== false;
   }
 
@@ -313,7 +315,6 @@ class MessagesSettings {
       const serialPorts = (comResult.ports || []).filter(p => p.type !== 'ethernet');
 
       // 2. Fetch ICOM ports (ICOMCONFIG)
-      await new Promise(r => setTimeout(r, 300));
       this._setStatus('Requesting ICOMCONFIG...');
       const icomResult = await this.api.requestIcomconfig();
       const icomPorts = icomResult.ports || [];
@@ -330,7 +331,6 @@ class MessagesSettings {
       }
 
       // 4. Fetch LOGLISTA
-      await new Promise(r => setTimeout(r, 300));
       const logResult = await this.api.requestLoglista();
       if (logResult.entries) {
         this.activeEntries = logResult.entries;

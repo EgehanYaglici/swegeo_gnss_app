@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events');
 
 const TIMEOUT_MS           = 3000;   // Fallback — <OK gelmezse bu kadar bekle
-const AUTH_TIMEOUT_MS      = 2500;   // Cihaz AUTHORIZATION desteklemiyor olabilir
+const AUTH_TIMEOUT_MS      = 1500;   // AUTHORIZATION: kısa timeout, diğer sorguları bloke etmesin
 const SETTLE_MS            = 150;    // <OK gelmez ama data gelirse bu kadar bekle
 const LOGLISTA_COOLDOWN_MS = 1000;
 const RETRY_DELAY_MS       = 300;
@@ -265,6 +265,8 @@ class DeviceQuery extends EventEmitter {
   // ─── Parsers ───────────────────────────────────────────────────────────────
 
   _parseAuthorization(lines) {
+    console.log('[DeviceQuery] AUTHORIZATION buffer:', lines);
+
     for (const line of lines) {
       const upper = line.toUpperCase();
       if (!upper.includes('AUTHORIZATION')) continue;
@@ -279,17 +281,23 @@ class DeviceQuery extends EventEmitter {
 
       // fields: AuthMode, TimeRemaining, InsEnable, DualAntEnable, MaxRTKFreq, MaxInsFreq, ...
       const fields = payload.split(',').map(t => t.trim());
+      console.log('[DeviceQuery] AUTHORIZATION fields:', fields);
+
       if (fields.length < 4) continue;
 
-      return {
+      const result = {
         authMode:     fields[0] || 'UNKNOWN',
         insEnable:    fields[2]?.toUpperCase() === 'TRUE',
         dualAntEnable:fields[3]?.toUpperCase() === 'TRUE',
         maxRtkFreq:   parseInt(fields[4]) || 0,
         maxInsFreq:   parseInt(fields[5]) || 0
       };
+      console.log('[DeviceQuery] AUTHORIZATION parsed:', result);
+      return result;
     }
-    return null;  // Cihaz AUTHORIZATION desteklemiyor veya timeout
+
+    console.log('[DeviceQuery] AUTHORIZATION: no matching line found (device may not support this command)');
+    return null;
   }
 
   _parseComconfig(lines) {
