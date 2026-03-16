@@ -1,16 +1,22 @@
 // SourceSelector loaded globally
 
-
 class PositionCard {
     constructor(api) {
         this.api = api;
-        this.toggleBtn = document.getElementById('pos-toggle'); // New Toggle
-        this.sourceContainer = document.getElementById('pos-source-container'); // Animation container
-        this.currentSource = null;
+        this.toggleBtn = document.getElementById('pos-toggle');
+        this.sourceContainer = document.getElementById('pos-source-container');
+        this.hdgSourceContainer = document.getElementById('hdg-source-container');
+
+        this.currentPosSource = null;
+        this.currentHdgSource = null;
+        this.currentHeading = null; // Store latest heading for map rotation
+
         this.map = null;
         this.marker = null;
         this.lastUpdate = 0;
-        this.sourceSelector = null;
+
+        this.posSourceSelector = null;
+        this.hdgSourceSelector = null;
         this.isActive = false;
 
         // SVG Constants
@@ -18,128 +24,179 @@ class PositionCard {
         this.SVG_CROSS = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>`;
 
         // NMEA Messages that require GP prefix
-        this.NMEA_MESSAGES = new Set(['GGA', 'RMC', 'GLL', 'GNS', 'FPD', 'HPD', 'VTG', 'GSA', 'GSV', 'ZDA']);
+        this.NMEA_MESSAGES = new Set(['GGA', 'RMC', 'GLL', 'GNS', 'FPD', 'HPD', 'VTG', 'GSA', 'GSV', 'ZDA', 'HDT']);
 
         this.init();
     }
 
     async init() {
-        // Load available sources
-        const messages = await this.api.getMessages('position');
-        const formattedMessages = messages.map(msg => ({
+        // Load available position sources
+        const posMessages = await this.api.getMessages('position');
+        const formattedPosMessages = posMessages.map(msg => ({
             id: msg.id,
             name: msg.name,
             type: msg.type,
             log_command: msg.log_command
         }));
 
-        // Create SourceSelector
-        this.sourceSelector = new SourceSelector('pos-source-selector', formattedMessages);
+        // Load available heading sources
+        const hdgMessages = await this.api.getMessages('heading');
+        const formattedHdgMessages = [
+            { id: 'NONE', name: 'No Heading', type: 'ascii', log_command: null },
+            ...hdgMessages.map(msg => ({
+                id: msg.id,
+                name: msg.name,
+                type: msg.type,
+                log_command: msg.log_command
+            }))
+        ];
+
+        // Create SourceSelectors
+        this.posSourceSelector = new SourceSelector('pos-source-selector', formattedPosMessages);
+        this.hdgSourceSelector = new SourceSelector('hdg-source-selector', formattedHdgMessages);
 
         // Bind Toggle Click
         this.toggleBtn.onclick = () => this.toggleActive();
 
-        // Default: Select first source but stay INACTIVE
-        if (messages.length > 0) {
-            const first = messages[0];
-            this.sourceSelector.setCurrentSource(first.id, first.name);
-            this.currentSource = { id: first.id, name: first.name, log_command: first.log_command };
-            // Do NOT subscribe yet
+        // Default: Select first pos source but stay INACTIVE
+        if (posMessages.length > 0) {
+            const first = posMessages[0];
+            this.posSourceSelector.setCurrentSource(first.id, first.name);
+            this.currentPosSource = { id: first.id, name: first.name, log_command: first.log_command };
         }
 
-        // Source change handler
-        this.sourceSelector.onSourceChanged = async (msgId, msgName) => {
-            console.log(`[PositionCard] Source change requested: ${msgName} (${msgId})`);
+        // Default: Select first hdg source but stay INACTIVE
+        if (formattedHdgMessages.length > 0) {
+            const first = formattedHdgMessages[0];
+            this.hdgSourceSelector.setCurrentSource(first.id, first.name);
+            this.currentHdgSource = { id: first.id, name: first.name, log_command: first.log_command };
+        }
 
-            // 1. Unsubscribe from previous source and conditionally UNLOG
-            if (this.isActive && this.currentSource) {
-                try {
-                    // Always unsubscribe from UI data flow
-                    await this.api.unsubscribe('position', this.currentSource.id, this.currentSource.name);
+        // Position Source change handler
+        this.posSourceSelector.onSourceChanged = async (msgId, msgName) => {
+            console.log(`[PositionCard] Pos Source change requested: ${msgName} (${msgId})`);
+            await this._handleSourceChange('position', this.currentPosSource, msgId, msgName, this.posSourceSelector, (newSrc) => this.currentPosSource = newSrc);
+        };
 
-                    const oldCmdName = this._getCommandName(this.currentSource);
-
-                    // Check if NTRIP is connected - if so, don't UNLOG GGA as it's needed for NTRIP
-                    const ntripStatus = await this.api.getNtripStatus();
-                    const isGGA = oldCmdName && oldCmdName.toUpperCase().includes('GGA');
-                    const shouldKeepGGA = ntripStatus && ntripStatus.connected && isGGA;
-
-                    if (shouldKeepGGA) {
-                        console.log(`[PositionCard] Keeping ${oldCmdName} device command active for NTRIP`);
-                    } else {
-                        const unlogCmd = `UNLOG ${oldCmdName}`;
-                        console.log(`[PositionCard] Sending UNLOG: ${unlogCmd}`);
-                        await this.api.sendCommand(unlogCmd);
-                    }
-                } catch (e) {
-                    console.error('[PositionCard] Error unlogging old source:', e);
-                }
+        // Heading Source change handler
+        this.hdgSourceSelector.onSourceChanged = async (msgId, msgName) => {
+            console.log(`[PositionCard] Hdg Source change requested: ${msgName} (${msgId})`);
+            // Reset heading data when source changes
+            this.currentHeading = null;
+            if (this.marker) {
+                this.marker.setIcon(this._createMarkerIcon());
             }
+            await this._handleSourceChange('heading', this.currentHdgSource, msgId, msgName, this.hdgSourceSelector, (newSrc) => this.currentHdgSource = newSrc);
+        };
 
-            // 2. Update current source state
-            const msgObj = this.sourceSelector.availableMessages.find(m => m.id == msgId);
-            this.currentSource = { id: msgId, name: msgName, log_command: msgObj?.log_command };
+        // Rate change handlers
+        this.posSourceSelector.onRateChanged = async (rate) => this._handleRateChange(this.currentPosSource, rate);
+        this.hdgSourceSelector.onRateChanged = async (rate) => this._handleRateChange(this.currentHdgSource, rate);
 
-            // 3. Clear UI (Safe Mode)
+        // Init Map
+        this.initMap();
+        this.hdgStatsGrid = document.getElementById('hdg-stats-grid');
+        this.hdgVal = document.getElementById('hdg-val');
+        this.hdgPitch = document.getElementById('hdg-pitch');
+        this.hdgBaseline = document.getElementById('hdg-baseline');
+
+        // Data Listeners
+        this.api.onData('position', (data) => this.updatePosition(data));
+        this.api.onData('heading', (data) => this.updateHeading(data));
+    }
+
+    async _handleSourceChange(capability, currentSrc, newMsgId, newMsgName, selectorInstance, setSourceCallback) {
+        // 1. Unsubscribe from previous source and conditionally UNLOG
+        if (this.isActive && currentSrc && currentSrc.id !== 'NONE') {
+            try {
+                await this.api.unsubscribe(capability, currentSrc.id, currentSrc.name);
+                const oldCmdName = this._getCommandName(currentSrc);
+
+                // NTRIP handling only for position (GGA)
+                const shouldKeepGGA = await this._shouldKeepGGA(oldCmdName);
+
+                if (shouldKeepGGA) {
+                    console.log(`[PositionCard] Keeping ${oldCmdName} device command active for NTRIP`);
+                } else if (oldCmdName) {
+                    const unlogCmd = `UNLOG ${oldCmdName}`;
+                    console.log(`[PositionCard] Sending UNLOG: ${unlogCmd}`);
+                    await this.api.sendCommand(unlogCmd);
+                }
+            } catch (e) {
+                console.error(`[PositionCard] Error unlogging old ${capability} source:`, e);
+            }
+        }
+
+        // 2. Resolve the new source object
+        const msgObj = selectorInstance.availableMessages.find(m => m.id == newMsgId);
+        const newSrcResolved = { id: newMsgId, name: newMsgName, log_command: msgObj?.log_command };
+
+        // 3. Update current source state via callback
+        setSourceCallback(newSrcResolved);
+
+        // 4. Clear UI for position explicitly (Safe Mode)
+        if (capability === 'position') {
             try {
                 this.clearData();
             } catch (e) {
                 console.warn('[PositionCard] Error clearing data:', e);
             }
+        }
 
-            if (this.isActive) {
-                try {
-                    await this.api.subscribe('position', msgId, msgName);
-                    this.sourceSelector.startShimmer();
-                } catch (e) {
-                    console.error('[PositionCard] Error subscribing:', e);
-                }
-
-                // LOG Command (Device Control)
-                try {
-                    const cmdName = this._getCommandName(this.currentSource);
-                    if (cmdName) {
-                        const rateHz = this.sourceSelector.getCurrentRate() || 1;
-                        const period = 1.0 / Number(rateHz);
-                        const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-
-                        console.log(`[PositionCard] Sending LOG: ${logCmd}`);
-                        await this.api.sendCommand(logCmd);
-                    } else {
-                        console.error('[PositionCard] Could not determine command name for:', this.currentSource);
-                    }
-                } catch (e) {
-                    console.error('[PositionCard] Error sending LOG command:', e);
-                }
-            }
-
-            window.dispatchEvent(new Event('log-changed'));
-        };
-
-        // Rate change handler
-        this.sourceSelector.onRateChanged = async (rate) => {
+        // 5. Subscribe and LOG new source if active
+        if (this.isActive && newMsgId !== 'NONE') {
             try {
-                if (this.currentSource) {
-                    // Use centralized command name logic
-                    const cmdName = this._getCommandName(this.currentSource);
-                    const period = 1.0 / Number(rate);
-
-                    // User requested UPPERCASE
-                    const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-                    console.log(`Sending rate command: ${logCmd}`);
-                    await this.api.sendCommand(logCmd);
-                    window.dispatchEvent(new Event('log-changed'));
-                }
-            } catch (err) {
-                console.error('[PositionCard] Error changing rate:', err);
+                await this.api.subscribe(capability, newMsgId, newMsgName);
+                selectorInstance.startShimmer();
+            } catch (e) {
+                console.error(`[PositionCard] Error subscribing to ${capability}:`, e);
             }
-        };
 
-        // Init Map
-        this.initMap();
+            try {
+                // Must use the freshly resolved source variable to avoid race conditions!
+                const cmdName = this._getCommandName(newSrcResolved);
+                if (cmdName) {
+                    const rateHz = selectorInstance.getCurrentRate() || 1;
+                    const period = 1.0 / Number(rateHz);
+                    const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
 
-        // Data Listener
-        this.api.onData('position', (data) => this.update(data));
+                    console.log(`[PositionCard] Sending LOG: ${logCmd}`);
+                    await this.api.sendCommand(logCmd);
+                } else {
+                    console.error(`[PositionCard] Could not determine command name for ${capability}:`, newSrcResolved);
+                }
+            } catch (e) {
+                console.error(`[PositionCard] Error sending LOG command for ${capability}:`, e);
+            }
+        } else if (newMsgId === 'NONE') {
+            selectorInstance.stopShimmer();
+            if (capability === 'heading' && this.hdgStatsGrid) {
+                this.hdgStatsGrid.style.display = 'none';
+            }
+        }
+
+        window.dispatchEvent(new Event('log-changed'));
+    }
+
+    async _handleRateChange(currentSrc, rate) {
+        try {
+            if (currentSrc) {
+                const cmdName = this._getCommandName(currentSrc);
+                const period = 1.0 / Number(rate);
+                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
+                console.log(`Sending rate command: ${logCmd}`);
+                await this.api.sendCommand(logCmd);
+                window.dispatchEvent(new Event('log-changed'));
+            }
+        } catch (err) {
+            console.error('[PositionCard] Error changing rate:', err);
+        }
+    }
+
+    async _shouldKeepGGA(cmdName) {
+        const ntripStatus = await this.api.getNtripStatus();
+        const isGGA = cmdName && String(cmdName).toUpperCase().includes('GGA');
+        return ntripStatus && ntripStatus.connected && isGGA;
     }
 
     async toggleActive() {
@@ -150,42 +207,69 @@ class PositionCard {
             this.toggleBtn.classList.remove('inactive');
             this.toggleBtn.classList.add('active');
             this.toggleBtn.innerHTML = this.SVG_CHECK;
-            this.sourceContainer.classList.add('active'); // Expand selector
 
-            if (this.currentSource) {
-                await this.api.subscribe('position', this.currentSource.id, this.currentSource.name);
-                this.sourceSelector.startShimmer();
+            if (this.sourceContainer) this.sourceContainer.classList.add('active');
+            if (this.hdgSourceContainer) this.hdgSourceContainer.classList.add('active');
 
-                // Send LOG command to enable this message
-                const cmdName = this._getCommandName(this.currentSource);
-                const rateHz = this.sourceSelector.getCurrentRate() || 1;
+            // Activate Position
+            if (this.currentPosSource) {
+                await this.api.subscribe('position', this.currentPosSource.id, this.currentPosSource.name);
+                this.posSourceSelector.startShimmer();
+
+                const cmdName = this._getCommandName(this.currentPosSource);
+                const rateHz = this.posSourceSelector.getCurrentRate() || 1;
                 const period = 1.0 / Number(rateHz);
-
-                // User requested UPPERCASE
                 const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
                 console.log(`[PositionCard] Sending LOG command on activate: ${logCmd}`);
                 await this.api.sendCommand(logCmd);
             }
+
+            // Activate Heading
+            if (this.currentHdgSource && this.currentHdgSource.id !== 'NONE') {
+                await this.api.subscribe('heading', this.currentHdgSource.id, this.currentHdgSource.name);
+                this.hdgSourceSelector.startShimmer();
+
+                const cmdName = this._getCommandName(this.currentHdgSource);
+                const rateHz = this.hdgSourceSelector.getCurrentRate() || 1;
+                const period = 1.0 / Number(rateHz);
+                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
+                console.log(`[PositionCard] Sending LOG command on activate: ${logCmd}`);
+                await this.api.sendCommand(logCmd);
+            }
+
         } else {
             // Deactivate
             this.toggleBtn.classList.remove('active');
             this.toggleBtn.classList.add('inactive');
             this.toggleBtn.innerHTML = this.SVG_CROSS;
-            this.sourceContainer.classList.remove('active'); // Collapse selector
 
-            if (this.currentSource) {
-                await this.api.unsubscribe('position', this.currentSource.id, this.currentSource.name);
-                this.sourceSelector.stopShimmer();
+            if (this.sourceContainer) this.sourceContainer.classList.remove('active');
+            if (this.hdgSourceContainer) this.hdgSourceContainer.classList.remove('active');
 
-                // Explicit UNLOG on deactivate (unless GGA is needed for NTRIP)
-                const cmdName = this._getCommandName(this.currentSource);
-                const ntripStatus = await this.api.getNtripStatus();
-                const isGGA = cmdName && cmdName.toUpperCase().includes('GGA');
-                const shouldKeepGGA = ntripStatus && ntripStatus.connected && isGGA;
+            // Deactivate Position
+            if (this.currentPosSource && this.currentPosSource.id !== 'NONE') {
+                await this.api.unsubscribe('position', this.currentPosSource.id, this.currentPosSource.name);
+                this.posSourceSelector.stopShimmer();
+
+                const cmdName = this._getCommandName(this.currentPosSource);
+                const shouldKeepGGA = await this._shouldKeepGGA(cmdName);
 
                 if (shouldKeepGGA) {
                     console.log(`[PositionCard] Keeping ${cmdName} active for NTRIP connection (deactivate)`);
-                } else {
+                } else if (cmdName) {
+                    const unlogCmd = `UNLOG ${cmdName}`;
+                    console.log(`[PositionCard] Sending UNLOG on deactivate: ${unlogCmd}`);
+                    await this.api.sendCommand(unlogCmd);
+                }
+            }
+
+            // Deactivate Heading
+            if (this.currentHdgSource && this.currentHdgSource.id !== 'NONE') {
+                await this.api.unsubscribe('heading', this.currentHdgSource.id, this.currentHdgSource.name);
+                this.hdgSourceSelector.stopShimmer();
+
+                const cmdName = this._getCommandName(this.currentHdgSource);
+                if (cmdName) {
                     const unlogCmd = `UNLOG ${cmdName}`;
                     console.log(`[PositionCard] Sending UNLOG on deactivate: ${unlogCmd}`);
                     await this.api.sendCommand(unlogCmd);
@@ -193,13 +277,7 @@ class PositionCard {
             }
         }
 
-        // Notify DeviceMonitor of log change
         window.dispatchEvent(new Event('log-changed'));
-    }
-
-    async selectSource(msgId, msgName) {
-        this.currentSource = { id: msgId, name: msgName };
-        await this.api.subscribe('position', msgId, msgName);
     }
 
     initMap() {
@@ -211,7 +289,7 @@ class PositionCard {
                 scrollWheelZoom: true,
             }).setView([39.9, 32.8], 6);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
@@ -231,7 +309,34 @@ class PositionCard {
         }
     }
 
-    update(data) {
+    _createMarkerIcon() {
+        if (this.currentHeading !== null) {
+            // Real physical vehicle standard heading arrow (pointing UP/North by default, rotating)
+            const rot = this.currentHeading;
+            const iconHtml = `<div class="pos-map-arrow" style="width: 100%; height: 100%; transform: rotate(${rot}deg); transition: transform 0.2s linear; display: flex; align-items: center; justify-content: center;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="#3B82F6" stroke="#1D4ED8" stroke-width="2" style="transform: translateY(-2px)">
+                                    <path d="M12 2L4 20l8-4 8 4L12 2z" stroke-linejoin="round"/>
+                                </svg>
+                              </div>`;
+            return L.divIcon({
+                html: iconHtml,
+                className: '',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        } else {
+            // Standard dot
+            const iconHtml = `<div style="width: 14px; height: 14px; background: #3B82F6; border: 2px solid #1D4ED8; border-radius: 50%;"></div>`;
+            return L.divIcon({
+                html: iconHtml,
+                className: '',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+        }
+    }
+
+    updatePosition(data) {
         const now = performance.now();
         if (now - this.lastUpdate < 100) return;
         this.lastUpdate = now;
@@ -264,7 +369,6 @@ class PositionCard {
         for (const ef of (data.extra_fields || [])) {
             if (ef.value == null) continue;
 
-            // New Grid Item Structure
             const gridItem = document.createElement('div');
             gridItem.className = 'pos-grid-item';
 
@@ -282,20 +386,53 @@ class PositionCard {
         }
 
         // Update map
-        if (this.map && lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-            const latlng = [lat, lon];
-            if (!this.marker) {
-                this.marker = L.circleMarker(latlng, {
-                    radius: 6,
-                    fillColor: '#3B82F6',
-                    fillOpacity: 1,
-                    color: '#1D4ED8',
-                    weight: 2
-                }).addTo(this.map);
-                this.map.setView(latlng, 16);
-            } else {
-                this.marker.setLatLng(latlng);
+        this.updateMapMarker(lat, lon);
+    }
+
+    updateHeading(data) {
+        if (!data) return;
+
+        // Populate Left Panel Heading Stats Grid
+        if (this.hdgStatsGrid && data.heading !== undefined) {
+            this.hdgStatsGrid.style.display = 'grid'; // display it alongside the position grid
+
+            if (this.hdgVal) {
+                this.hdgVal.textContent = data.heading !== null && data.heading !== undefined ? `${data.heading.toFixed(2)}°` : '--';
             }
+            if (this.hdgPitch) {
+                this.hdgPitch.textContent = data.pitch !== null && data.pitch !== undefined ? `${data.pitch.toFixed(2)}°` : '--';
+            }
+            if (this.hdgBaseline) {
+                this.hdgBaseline.textContent = data.baseline !== null && data.baseline !== undefined ? `${data.baseline.toFixed(3)} m` : '--';
+            }
+        }
+
+        if (data.heading !== undefined && data.heading !== null) {
+            this.currentHeading = data.heading;
+
+            if (this.marker) {
+                const el = this.marker.getElement();
+                const arrow = el ? el.querySelector('.pos-map-arrow') : null;
+                if (arrow) {
+                    // Fast CSS update without rebuilding leaflet icon
+                    arrow.style.transform = `rotate(${this.currentHeading}deg)`;
+                } else {
+                    // Need to switch from circle to arrow
+                    this.marker.setIcon(this._createMarkerIcon());
+                }
+            }
+        }
+    }
+
+    updateMapMarker(lat, lon) {
+        if (!this.map || lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
+        const latlng = [lat, lon];
+
+        if (!this.marker) {
+            this.marker = L.marker(latlng, { icon: this._createMarkerIcon() }).addTo(this.map);
+            this.map.setView(latlng, 16);
+        } else {
+            this.marker.setLatLng(latlng);
         }
     }
 
@@ -305,11 +442,15 @@ class PositionCard {
         document.getElementById('pos-alt').textContent = '--';
         document.getElementById('pos-hacc').textContent = '--';
         document.getElementById('pos-vacc').textContent = '--';
-        document.getElementById('pos-grid').innerHTML = '';
+        document.getElementById('pos-extra-fields').innerHTML = '';
         if (this.marker) {
             this.marker.remove();
             this.marker = null;
         }
+        if (this.hdgStatsGrid) {
+            this.hdgStatsGrid.style.display = 'none';
+        }
+        this.currentHeading = null;
     }
 
     formatFieldValue(ef) {
@@ -330,25 +471,15 @@ class PositionCard {
     }
 
     _getCommandName(source) {
-        if (!source) return null;
+        if (!source || source.id === 'NONE') return null;
 
-        // 1. Explicit log_command from schema
         if (source.log_command) return source.log_command;
 
-
-
-        // 2. NMEA Check (Add GP prefix)
-        // Check both ID and Name as sometimes they differ
-        // SAFETY: Convert to string before upper case to avoid error on numbers
         const lookupName = String(source.name || source.id || '').toUpperCase();
         if (this.NMEA_MESSAGES.has(lookupName)) {
             return `GP${lookupName}`;
         }
 
-        // 3. Fallback to name/id
         return source.name || source.id;
     }
 }
-
-// No export needed
-

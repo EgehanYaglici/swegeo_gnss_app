@@ -451,6 +451,23 @@
           ]
         },
 
+        "HEADINGA": {
+          "tag": "HEADINGA",
+          "type": "ascii",
+          "description": "Heading (ASCII)",
+          "field_mapping": {
+            "heading": "heading_deg",
+            "pitch": "pitch_deg",
+            "baseline": "baseline_length_m"
+          },
+          "extra_fields": [
+            {"field": "solution_status", "label": "Solution", "format": "str"},
+            {"field": "position_type", "label": "Type", "format": "str"},
+            {"field": "heading_std_deg", "label": "Heading σ", "format": "float", "unit": "°", "decimals": 3},
+            {"field": "pitch_std_deg", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 3}
+          ]
+        },
+
         "HEADING2B": {
           "id": 1335,
           "type": "binary",
@@ -466,17 +483,18 @@
           ]
         },
 
-        "INSATTB": {
-          "id": 263,
-          "type": "binary",
-          "description": "INS Attitude",
+        "HEADING2A": {
+          "tag": "HEADING2A",
+          "type": "ascii",
+          "description": "Heading 2 (ASCII)",
           "field_mapping": {
-            "heading": "azimuth_deg",
+            "heading": "heading_deg",
             "pitch": "pitch_deg",
-            "roll": "roll_deg"
+            "baseline": "baseline_length_m"
           },
           "extra_fields": [
-            {"field": "status", "label": "Status", "format": "int"}
+            {"field": "solution_status", "label": "Solution", "format": "str"},
+            {"field": "heading_std_deg", "label": "Heading σ", "format": "float", "unit": "°", "decimals": 3}
           ]
         },
 
@@ -488,50 +506,6 @@
             "heading": "heading_deg"
           },
           "extra_fields": []
-        },
-
-        "TRA": {
-          "id": "TRA",
-          "type": "nmea",
-          "description": "Yaw, Pitch and Roll",
-          "field_mapping": {
-            "heading": "yaw_deg",
-            "pitch": "pitch_deg",
-            "roll": "roll_deg"
-          },
-          "extra_fields": [
-            {"field": "sol_status", "label": "Solution", "format": "int"},
-            {"field": "num_sats", "label": "Satellites", "format": "int"}
-          ]
-        },
-
-        "PASHR": {
-          "id": "PASHR",
-          "type": "nmea",
-          "description": "Proprietary Attitude",
-          "field_mapping": {
-            "heading": "yaw_deg",
-            "pitch": "pitch_deg",
-            "roll": "roll_deg"
-          },
-          "extra_fields": [
-            {"field": "sol_status", "label": "Solution", "format": "int"},
-            {"field": "heave_m", "label": "Heave", "format": "float", "unit": "m", "decimals": 2}
-          ]
-        },
-
-        "ORI": {
-          "id": "ORI",
-          "type": "nmea",
-          "description": "Orientation",
-          "field_mapping": {
-            "heading": "azimuth_deg",
-            "pitch": "pitch_deg",
-            "baseline": "baseline_len_m"
-          },
-          "extra_fields": [
-            {"field": "sol_status", "label": "Solution", "format": "int"}
-          ]
         }
       }
     },

@@ -17,7 +17,7 @@
   <div id="splash-overlay">
     <div class="splash-inner">
       <div class="splash-logo-wrap">
-        <img src="../../assets/swegeo_logo_preview.png" class="splash-logo" alt="SWEGEO" />
+        <img src="../../assets/swegeo_logo.ico" class="splash-logo" alt="SWEGEO" />
         <div class="splash-ring"></div>
         <div class="splash-ring2"></div>
       </div>
@@ -177,8 +177,12 @@
                     <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 </div>
+                <!-- Dual Source Selectors (Pos & Hdg) -->
                 <div id="pos-source-container" class="source-selector-container">
                   <div id="pos-source-selector"></div>
+                </div>
+                <div id="hdg-source-container" class="source-selector-container">
+                  <div id="hdg-source-selector"></div>
                 </div>
               </div>
             </div>
@@ -208,6 +212,23 @@
                   <div class="pos-grid-item">
                     <span class="pos-label">V.Acc</span>
                     <span class="pos-value-secondary" id="pos-vacc">--</span>
+                  </div>
+                </div>
+
+                <!-- Orientation Grid (Hidden unless active heading source) -->
+                <div id="hdg-stats-grid" class="pos-secondary-grid"
+                  style="display: none; border-top: 1px dashed #E5E7EB; padding-top: 6px; margin-top: 4px;">
+                  <div class="pos-grid-item">
+                    <span class="pos-label">Heading</span>
+                    <span class="pos-value-secondary" id="hdg-val">--</span>
+                  </div>
+                  <div class="pos-grid-item">
+                    <span class="pos-label">Pitch</span>
+                    <span class="pos-value-secondary" id="hdg-pitch">--</span>
+                  </div>
+                  <div class="pos-grid-item">
+                    <span class="pos-label">Baseline</span>
+                    <span class="pos-value-secondary" id="hdg-baseline">--</span>
                   </div>
                 </div>
 
@@ -609,8 +630,7 @@
             <!-- Floating Toolbar Card -->
             <div class="msg-floating-toolbar">
               <div class="messages-search-wrapper">
-                <svg class="messages-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2">
+                <svg class="messages-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -695,37 +715,40 @@
                 </div>
               </button>
 
-              <!-- Right: Actions -->
+              <!-- Right: Unified Actions -->
               <div class="dock-actions">
                 <div id="msg-status" class="messages-status">Ready</div>
                 <div class="dock-separator"></div>
 
-                <button id="btn-msg-refresh" class="dock-action-btn" title="Refresh ports">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button id="btn-msg-refresh" class="msg-action-btn" title="Refresh list">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="23 4 23 10 17 10" />
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                   </svg>
+                  <span>Refresh</span>
                 </button>
 
-                <button id="btn-msg-stop-all" class="dock-action-btn btn-danger-ghost" title="Stop all">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button id="btn-msg-stop-all" class="msg-action-btn" title="Stop all">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   </svg>
+                  <span>Stop All</span>
                 </button>
 
-                <button id="btn-msg-apply" class="dock-action-btn btn-primary-glass" title="Apply changes">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button id="btn-msg-apply" class="msg-action-btn" title="Apply changes">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <span>Apply</span>
                 </button>
 
-                <button id="btn-msg-save" class="dock-action-btn btn-success-glass" title="Save to flash">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button id="btn-msg-save" class="msg-action-btn success" title="Save to flash">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                     <polyline points="17 21 17 13 7 13 7 21" />
                     <polyline points="7 3 7 8 15 8" />
                   </svg>
+                  <span>Save</span>
                 </button>
               </div>
             </div>

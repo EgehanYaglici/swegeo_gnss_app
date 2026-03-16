@@ -183,7 +183,46 @@ class SerialManager extends EventEmitter {
       progressed = false;
       const buf = this._buffer;
 
-      // 1) BYNAV binary (AA 44 12)
+      // 1a) BYNAV short binary (AA 44 13) — short header, 12 bytes total
+      if (buf.length >= 3 && buf[0] === 0xAA && buf[1] === 0x44 && buf[2] === 0x13) {
+        if (buf.length < 12) return;
+        const payloadLen = buf[3]; // UChar — message length, not including header or CRC
+        const totalLen = 12 + payloadLen + 4;
+        if (buf.length < totalLen) return;
+
+        const msg = buf.slice(0, totalLen);
+        const payloadWithHeader = msg.slice(0, -4);
+        const crcRx = msg.readUInt32LE(msg.length - 4);
+        const crcOk = crcRx === calcBlockCrc32(payloadWithHeader);
+
+        if (!crcOk) {
+          // False preamble or corrupt data — scan forward to next binary preamble
+          // (skipping just 1 byte would leave buf[0]=0x44 which falls through to the
+          //  RTCM handler and causes 0xD3 inside payload data to be misidentified)
+          let skip = 1;
+          while (skip < buf.length - 2) {
+            if (buf[skip] === 0xAA && buf[skip + 1] === 0x44 &&
+                (buf[skip + 2] === 0x12 || buf[skip + 2] === 0x13)) break;
+            skip++;
+          }
+          this._buffer = buf.slice(skip);
+          progressed = true;
+          continue;
+        }
+
+        const msgId = payloadWithHeader.readUInt16LE(4);
+        const payload = payloadWithHeader.slice(12);
+
+        const hexStr = [...msg].map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        this.emit('line', hexStr, '#888');
+        this.emit('binary', { ok: true, id: msgId, payload, raw: msg, crc: crcRx });
+
+        this._buffer = buf.slice(totalLen);
+        progressed = true;
+        continue;
+      }
+
+      // 1b) BYNAV standard binary (AA 44 12)
       if (buf.length >= 3 && buf[0] === 0xAA && buf[1] === 0x44 && buf[2] === 0x12) {
         if (buf.length < 28) return;
         const headerLen = buf[3];

@@ -143,7 +143,11 @@ class Terminal {
         }
 
         if (this.autoScroll) {
-            this.output.scrollTop = this.output.scrollHeight;
+            // Use requestAnimationFrame to let the browser mount the new DOM elements first,
+            // so the scrollHeight is accurate when we set scrollTop.
+            requestAnimationFrame(() => {
+                this.output.scrollTop = this.output.scrollHeight;
+            });
         }
     }
 

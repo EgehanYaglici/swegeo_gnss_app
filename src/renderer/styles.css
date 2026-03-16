@@ -1034,6 +1034,76 @@ body {
   height: 100%;
 }
 
+/* Floating Heading HUD */
+.pos-map-panel {
+  position: relative;
+  /* Important: anchors the absolute HUD */
+}
+
+.hdg-hud-overlay {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: auto;
+  min-width: 140px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.hdg-hud-overlay.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.hud-header {
+  font-size: 8px;
+  font-weight: 800;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+
+.hud-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-label {
+  font-size: 9px;
+  color: #4B5563;
+  font-weight: 600;
+}
+
+.hud-value {
+  font-size: 10px;
+  color: #111827;
+  font-weight: 700;
+  font-family: var(--font-mono, 'Courier New', monospace);
+}
+
 
 
 /* Satellite Card */
@@ -1320,6 +1390,7 @@ body {
 .terminal-line {
   margin: 0;
 }
+
 
 .terminal-line.rtcm {
   color: #6a1b9a;
@@ -5475,6 +5546,16 @@ body {
   z-index: 10;
 }
 
+.msg-floating-toolbar .dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
 .messages-search-wrapper {
   position: relative;
   width: 240px;
@@ -5644,6 +5725,14 @@ body {
   text-align: right;
 }
 
+.msg-column-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
 /* Individual Message Items (New "Row" Style) */
 .msg-item {
   display: flex;
@@ -5654,16 +5743,20 @@ body {
   transition: background 0.15s;
   cursor: default;
   border: 1px solid transparent;
+  order: 1; /* Default order for inactive items */
+  opacity: 0.7; /* Dim inactive items slightly for visual hierarchy */
 }
 
 .msg-item:hover {
   background: var(--bg-secondary);
+  opacity: 1;
 }
 
 .msg-item.active-log {
   background: rgba(17, 77, 136, 0.05);
-  /* very light blue */
   border-color: rgba(17, 77, 136, 0.13);
+  order: 0; /* Pin active items to the top */
+  opacity: 1; /* Full opacity for active items */
 }
 
 /* Checkbox */
@@ -5672,7 +5765,6 @@ body {
   height: 16px;
   border-radius: 4px;
   border: 1px solid #D1D5DB;
-  margin-right: 10px;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -5712,6 +5804,12 @@ body {
   justify-content: space-between;
 }
 
+.msg-item-left-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Message Info Icon */
 .msg-item-info-btn {
   display: flex;
@@ -5724,7 +5822,6 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   background: transparent;
-  margin-right: 6px;
 }
 
 .msg-item-info-btn:hover {
@@ -5736,13 +5833,18 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  /* cursor: pointer;  Moved click to info icon, but name can still trigger? User said "info pop up signs" */
   cursor: default;
 }
 
 .msg-item-name:hover {
   color: var(--accent);
   text-decoration: underline;
+}
+
+.msg-item-right-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .msg-item-hz-input {
@@ -5776,6 +5878,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+  padding-left: 26px; /* Align description text under the name, not under the info icon */
 }
 
 /* Active Indicator */
@@ -5901,72 +6004,74 @@ body {
   margin: 0 8px;
 }
 
-/* Dock Action Buttons */
-.dock-action-btn {
+/* Unified Dock Action Buttons */
+.msg-action-btn {
   height: 38px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: none;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  color: #4B5563;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
-.dock-action-btn:hover {
-  background: #F3F4F6;
-  color: #1F2937;
-  transform: translateY(-1px);
+.msg-action-btn:hover {
+  background: var(--bg-secondary);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
 }
 
-.dock-action-btn:active {
-  transform: translateY(0);
+.msg-action-btn.basic:hover {
+  background: rgba(17, 77, 136, 0.05);
+  color: var(--accent);
+  border-color: rgba(17, 77, 136, 0.2);
 }
 
-/* Variant: Primary Glass */
-.btn-primary-glass {
-  background: #114D88;
-  /* Fallback */
-  background: rgba(17, 77, 136, 0.92);
-  color: white;
-  box-shadow: 0 4px 12px rgba(17, 77, 136, 0.28);
-  backdrop-filter: blur(4px);
+.msg-action-btn.primary {
+  background: var(--accent);
+  color: #FFFFFF;
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(26, 111, 212, 0.25);
 }
 
-.btn-primary-glass:hover {
-  background: #0d3d6e;
-  color: white;
-  box-shadow: 0 6px 16px rgba(17, 77, 136, 0.35);
+.msg-action-btn.primary:hover {
+  background: #155ba8;
+  border-color: #155ba8;
+  box-shadow: 0 4px 10px rgba(26, 111, 212, 0.35);
 }
 
-/* Variant: Success Glass */
-.btn-success-glass {
-  background: #10B981;
-  background: rgba(16, 185, 129, 0.9);
-  color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+.msg-action-btn.success {
+  background: var(--success);
+  color: #FFFFFF;
+  border-color: var(--success);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
 }
 
-.btn-success-glass:hover {
-  background: #059669;
-  color: white;
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+.msg-action-btn.success:hover {
+  background: #0d9668;
+  border-color: #0d9668;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
 }
 
-/* Variant: Danger Ghost */
-.btn-danger-ghost {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.1);
+.msg-action-btn.danger {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
 }
 
-.btn-danger-ghost:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #DC2626;
+.msg-action-btn.danger:hover {
+  color: #FFFFFF;
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
 }
 
 /* --- Port Selection Tray (Popover) --- */

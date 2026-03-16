@@ -38,6 +38,9 @@ class SourceSelector {
         this.pill = pill;
         this.label = pill.querySelector('.source-selector-label');
 
+        this._activeMenu = null;       // Singleton: currently open menu element
+        this._closeMenuHandler = null; // Reference for cleanup
+
         // Click handler
         pill.addEventListener('click', () => this.showMenu());
     }
@@ -81,8 +84,25 @@ class SourceSelector {
     showMenu() {
         if (!this.availableMessages || this.availableMessages.length === 0) return;
 
+        // Toggle: if this instance's menu is open, close it
+        if (this._activeMenu) {
+            if (this._activeMenu.parentNode) this._activeMenu.parentNode.removeChild(this._activeMenu);
+            this._activeMenu = null;
+            if (this._closeMenuHandler) {
+                document.removeEventListener('click', this._closeMenuHandler);
+                this._closeMenuHandler = null;
+            }
+            return;
+        }
+
+        // Global singleton: close any other open source selector menus
+        document.querySelectorAll('.source-selector-menu').forEach(m => {
+            if (m.parentNode) m.parentNode.removeChild(m);
+        });
+
         // Create dropdown menu
         const menu = document.createElement('div');
+        this._activeMenu = menu;
         menu.className = 'source-selector-menu';
 
         // Rate selector at top — segmented buttons + manual input
@@ -166,6 +186,11 @@ class SourceSelector {
                     item.addEventListener('click', () => {
                         this.selectSource(msg.id, msg.name);
                         if (menu.parentNode) menu.parentNode.removeChild(menu);
+                        this._activeMenu = null;
+                        if (this._closeMenuHandler) {
+                            document.removeEventListener('click', this._closeMenuHandler);
+                            this._closeMenuHandler = null;
+                        }
                     });
                 }
 
@@ -186,7 +211,7 @@ class SourceSelector {
 
         // Measure rendered height, then position
         const menuHeight = menu.offsetHeight;
-        const menuWidth  = menu.offsetWidth;
+        const menuWidth = menu.offsetWidth;
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
 
@@ -210,16 +235,19 @@ class SourceSelector {
         }
         left = Math.max(4, left);
 
-        menu.style.top  = `${top}px`;
+        menu.style.top = `${top}px`;
         menu.style.left = `${left}px`;
 
         // Close on outside click
         const closeMenu = (e) => {
             if (!menu.contains(e.target) && !this.pill.contains(e.target)) {
                 if (menu.parentNode) menu.parentNode.removeChild(menu);
+                this._activeMenu = null;
+                this._closeMenuHandler = null;
                 document.removeEventListener('click', closeMenu);
             }
         };
+        this._closeMenuHandler = closeMenu;
         setTimeout(() => document.addEventListener('click', closeMenu), 0);
     }
 

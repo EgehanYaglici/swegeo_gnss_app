@@ -3,6 +3,9 @@ dist/
 CLAUDE.md
 .claude/
 .agent/
+.agents/
+scripts/
+docs/
 *.log
 .DS_Store
 Thumbs.db
@@ -11,3 +14,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+nul
+temp_ibm.txt
+C*temp_ibm.txt

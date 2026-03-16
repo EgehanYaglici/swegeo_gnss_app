@@ -2906,7 +2906,7 @@
       "log_command": "corrimudatas",
       "default_rate_hz": 0,
       "on_new": true,
-      "payload_length": 60,
+      "payload_length": 56,
       "fields": [
         {
           "name": "week",
