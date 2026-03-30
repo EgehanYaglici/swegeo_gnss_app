@@ -4551,7 +4551,7 @@ body {
 
 .ntrip-live-dot.connected {
   background: var(--success);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 6px rgba(17, 77, 136, 0.5);
   animation: ntripPulse 2s ease-in-out infinite;
 }
 
@@ -4646,7 +4646,7 @@ body {
 
 .rtk-dot.connected {
   background: var(--success);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 6px rgba(17, 77, 136, 0.5);
   animation: ntripPulse 2s ease-in-out infinite;
 }
 
@@ -6402,13 +6402,13 @@ body {
   background: var(--success);
   color: #FFFFFF;
   border-color: var(--success);
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 2px 6px rgba(17, 77, 136, 0.25);
 }
 
 .msg-action-btn.success:hover {
-  background: #0d9668;
-  border-color: #0d9668;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 4px 10px rgba(17, 77, 136, 0.35);
 }
 
 .msg-action-btn.danger {
@@ -6911,20 +6911,14 @@ body {
 .btn-secondary,
 .btn-sm {
   font-family: var(--font-ui, 'Roboto', sans-serif);
-  border-radius: 8px;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-primary {
-  background: var(--brand-blue);
-  color: #FFFFFF;
-  border: 1px solid var(--brand-blue);
   box-shadow: 0 2px 8px rgba(17, 77, 136, 0.18);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
   box-shadow: 0 4px 12px rgba(17, 77, 136, 0.24);
 }
 
@@ -6935,16 +6929,11 @@ body {
 }
 
 .btn-secondary {
-  background: rgba(144, 153, 169, 0.10);
-  color: var(--brand-blue);
-  border: 1px solid rgba(144, 153, 169, 0.45);
   box-shadow: none;
 }
 
 .btn-secondary:hover {
-  background: rgba(144, 153, 169, 0.18);
-  color: var(--brand-blue);
-  border-color: rgba(17, 77, 136, 0.28);
+  box-shadow: none;
 }
 
 .btn-secondary:focus,
@@ -6957,15 +6946,9 @@ body {
 }
 
 .btn-sm {
-  background: rgba(144, 153, 169, 0.10);
-  color: var(--brand-blue);
-  border: 1px solid rgba(144, 153, 169, 0.40);
-}
-
-.btn-sm:hover {
-  background: rgba(144, 153, 169, 0.18);
-  color: var(--brand-blue);
-  border-color: rgba(17, 77, 136, 0.28);
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
 }
 
 .messages-search {
