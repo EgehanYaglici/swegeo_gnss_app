@@ -2864,6 +2864,114 @@ body {
   color: var(--text-secondary);
 }
 
+/* ===== RF HEALTH CARD ===== */
+.rf-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px !important;
+}
+
+.rf-chip-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.rf-chip-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rf-chip-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: #9099A9;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rf-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 77, 136, 0.20);
+  background: rgba(17, 77, 136, 0.08);
+  color: #114D88;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rf-chip-ok {
+  border-color: rgba(17, 77, 136, 0.25);
+  background: rgba(17, 77, 136, 0.10);
+  color: #114D88;
+}
+
+.rf-chip-warn {
+  border-color: rgba(255, 190, 0, 0.35);
+  background: rgba(255, 190, 0, 0.18);
+  color: #114D88;
+}
+
+.rf-chip-crit {
+  border-color: rgba(255, 190, 0, 0.55);
+  background: rgba(255, 190, 0, 0.28);
+  color: #114D88;
+}
+
+.rf-chip-unknown {
+  border-color: rgba(144, 153, 169, 0.35);
+  background: rgba(144, 153, 169, 0.12);
+  color: #9099A9;
+}
+
+.rf-band-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rf-band-panel {
+  border: 1px solid rgba(17, 77, 136, 0.16);
+  background: rgba(17, 77, 136, 0.04);
+  border-radius: 10px;
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rf-band-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #114D88;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.rf-band-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9099A9;
+}
+
+.rf-band-row strong {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #114D88;
+}
+
 /* Legacy IMU fields (unused) */
 .field-section {
   padding-bottom: 6px;
@@ -5321,12 +5429,48 @@ body {
   grid-column: span 2;
 }
 
-/* 2-col layout: Attitude card hidden, Position + Satellites yayılır */
+/* No-INS layout — 6-column grid:
+   Top row:    [Position  3col = 50%] [Satellite    3col = 50%]
+   Bottom row: [DeviceMon 4col = 67%] [RTK Correct. 2col = 33%]
+   Alt satır orijinal oranını korur (2:1), üst satır yarı yarıya. */
 #cards-grid.layout-no-ins {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(6, 1fr);
 }
-#cards-grid.layout-no-ins #device-monitor-card {
-  grid-column: span 1;
+#cards-grid.layout-no-ins #position-card       { grid-column: span 3; }
+#cards-grid.layout-no-ins #satellite-card      { grid-column: span 3; }
+#cards-grid.layout-no-ins #device-monitor-card { grid-column: span 4; }
+#cards-grid.layout-no-ins #rtk-card            { grid-column: span 2; }
+
+/* Satellite card — horizontal layout in wide (no-INS) mode */
+/* skyplot sol taraf (kare, yükseklik bazlı), sistemler sağ taraf */
+#cards-grid.layout-no-ins #satellite-card .card-body {
+  flex-direction: row;
+  gap: 10px;
+  padding: 8px 12px;
+  align-items: stretch;
+}
+
+#cards-grid.layout-no-ins #satellite-card #skyplot {
+  flex: 0 0 auto;
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  aspect-ratio: 1;
+  margin: 0;
+}
+
+#cards-grid.layout-no-ins #satellite-card .sat-stats {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding-bottom: 0;
+}
+
+/* Tek sütun: tüm 7 takım alt alta, alan bol */
+#cards-grid.layout-no-ins #satellite-card .sat-grid {
+  grid-template-columns: 1fr;
+  gap: 3px 0;
 }
 
 .dm-card-body-expanded {
@@ -5375,7 +5519,113 @@ body {
   /* Removed border */
 }
 
-/* ... */
+/* Device info (model + cap flags) below connection status */
+.dm-device-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.dm-model-name {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #114D88;
+  letter-spacing: 0.5px;
+}
+
+.dm-model-sub {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: rgba(144, 153, 169, 0.85);
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+
+.dm-cap-flags {
+  display: flex;
+  gap: 4px;
+}
+
+.dm-cap-flag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.dm-cap-flag.on {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+}
+
+.dm-cap-flag.off {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6B7280;
+}
+
+/* Labeled info section (Navigation Systems / Satellite Freq.) */
+.dm-info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-top: 4px;
+  border-top: 1px solid rgba(144, 153, 169, 0.15);
+}
+
+.dm-info-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: rgba(144, 153, 169, 0.7);
+}
+
+/* Constellation system chips (GPS, GLONASS, GALILEO...) */
+.dm-sys-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.dm-sys-chip {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(17, 77, 136, 0.1);
+  color: #114D88;
+  letter-spacing: 0.3px;
+}
+
+/* Signal / frequency chips (B1I, L1, E5B...) */
+.dm-sig-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.dm-sig-chip {
+  font-size: 8px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(144, 153, 169, 0.13);
+  color: #9099A9;
+  font-family: var(--font-mono);
+  letter-spacing: 0.2px;
+}
 
 /* Section Headers */
 .dm-section-header {

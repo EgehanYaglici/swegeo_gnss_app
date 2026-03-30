@@ -24,8 +24,10 @@ function normalizeName(name) {
 function buildIndexes(schema) {
   const nameIdx = {};
   const idIdx = {};
+
+  // Two-pass: BYNAV (non-ubx) first so their numeric IDs take priority over UBX
   for (const [key, entry] of Object.entries(schema)) {
-    if (key.startsWith('_') || typeof entry !== 'object') continue;
+    if (key.startsWith('_') || typeof entry !== 'object' || entry._ubx) continue;
     nameIdx[normalizeName(key)] = key;
     for (const alias of (entry.aliases || [])) {
       nameIdx[normalizeName(alias)] = key;
@@ -34,6 +36,18 @@ function buildIndexes(schema) {
       idIdx[entry.id] = key;
     }
   }
+  // UBX messages: register name index; id index only if id not already claimed by BYNAV
+  for (const [key, entry] of Object.entries(schema)) {
+    if (key.startsWith('_') || typeof entry !== 'object' || !entry._ubx) continue;
+    nameIdx[normalizeName(key)] = key;
+    for (const alias of (entry.aliases || [])) {
+      nameIdx[normalizeName(alias)] = key;
+    }
+    if (typeof entry.id === 'number' && !idIdx[entry.id]) {
+      idIdx[entry.id] = key;
+    }
+  }
+
   return { nameIdx, idIdx };
 }
 
@@ -99,11 +113,23 @@ function safeEval(expr, context) {
   }
 }
 
+// Look up and parse a binary payload by UBX tag name (e.g. 'NAV-PVT').
+// Used by message-router for UBX subscriptions to avoid numeric id conflicts with BYNAV.
+function parseBinaryPayloadByName(tagName, payload, frameCrc) {
+  const schema = getBinaryMessageMap();
+  const { nameIdx } = getIndexes();
+  const key = nameIdx[normalizeName(tagName)];
+  if (!key || !schema[key]) return null;
+  return _doParse(key, schema[key], null, payload, frameCrc);
+}
+
 function parseBinaryPayload(msgId, payload, frameCrc) {
   const result = getEntryById(msgId);
   if (!result) return null;
+  return _doParse(result.key, result.entry, msgId, payload, frameCrc);
+}
 
-  const { key: schemaKey, entry } = result;
+function _doParse(schemaKey, entry, msgId, payload, frameCrc) {
   const buf = Buffer.from(payload);
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const values = {};
@@ -238,4 +264,4 @@ function parseBinaryPayload(msgId, payload, frameCrc) {
   };
 }
 
-module.exports = { parseBinaryPayload, getEntryById };
+module.exports = { parseBinaryPayload, parseBinaryPayloadByName, getEntryById };

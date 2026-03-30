@@ -1,6 +1,6 @@
 // Message Router - routes parsed binary/NMEA/ASCII messages to UI
 const { EventEmitter } = require('events');
-const { parseBinaryPayload } = require('./binary-parser');
+const { parseBinaryPayload, parseBinaryPayloadByName } = require('./binary-parser');
 const {
   getNmeaSchema,
   getAsciiMessageMap,
@@ -20,7 +20,7 @@ class MessageRouter extends EventEmitter {
     // Subscriptions: { capability: [{ msgId, sourceName }] }
     this._subs = {
       position: [], velocity: [], heading: [],
-      satellites: [], imu: [], time: []
+      satellites: [], imu: [], rf_health: [], time: []
     };
 
     // Reference counting for LOG/UNLOG
@@ -48,7 +48,7 @@ class MessageRouter extends EventEmitter {
       const sources = getCapabilitySources(cap);
       for (const [name, config] of Object.entries(sources)) {
         const type = config.type || 'binary';
-        if (type === 'binary' && typeof config.id === 'number') {
+        if ((type === 'binary' || type === 'ubx') && typeof config.id === 'number') {
           (this._binaryIdx[config.id] ||= []).push({ cap, sourceName: name });
         } else if (type === 'nmea' && typeof config.id === 'string') {
           (this._nmeaIdx[config.id] ||= []).push({ cap, sourceName: name });
@@ -165,7 +165,18 @@ class MessageRouter extends EventEmitter {
 
   _processBinary(capability, sourceName, msgId, payload, crc) {
     try {
-      const parsed = parseBinaryPayload(msgId, payload, crc);
+      // UBX sources (named 'UBX_*') use tag-based schema lookup to avoid numeric id
+      // conflicts with BYNAV messages that share the same id (e.g. INSATTB and NAV-PVT both = 263).
+      let parsed;
+      if (typeof sourceName === 'string' && sourceName.startsWith('UBX_')) {
+        // 'UBX_NAV_PVT' → 'NAV-PVT'
+        const ubxBase = sourceName.slice(4).replace(/_/g, '-');
+        parsed =
+          parseBinaryPayloadByName(`UBX-${ubxBase}`, payload, crc) ||
+          parseBinaryPayloadByName(ubxBase, payload, crc);
+      } else {
+        parsed = parseBinaryPayload(msgId, payload, crc);
+      }
       if (!parsed) return;
 
       const flat = this._flattenFields(parsed);

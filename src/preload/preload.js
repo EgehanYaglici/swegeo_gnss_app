@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   connect: (params) => ipcRenderer.invoke('serial:connect', params),
   disconnect: () => ipcRenderer.invoke('serial:disconnect'),
   sendCommand: (cmd) => ipcRenderer.invoke('serial:send', cmd),
+  applyUbxRates: (operations) => ipcRenderer.invoke('ubx:applyRates', { operations }),
+  sendUbxRate: (cfgKeyUart1, rateDiv) => ipcRenderer.invoke('ubx:setRate', { cfgKeyUart1, rateDiv }),
 
   // Message router
   subscribe: (capability, msgId, sourceName) =>
@@ -25,10 +27,13 @@ contextBridge.exposeInMainWorld('api', {
   getMessageSchema: (familyKey, variant) => ipcRenderer.invoke('config:messageSchema', { familyKey, variant }),
   getReferenceTable: (key) => ipcRenderer.invoke('config:referenceTable', key),
 
-  // Device query
+  // Device query — BYNAV
   requestComconfig: () => ipcRenderer.invoke('device:comconfig'),
   requestIcomconfig: () => ipcRenderer.invoke('device:icomconfig'),
   requestLoglista: () => ipcRenderer.invoke('device:loglista'),
+  requestUbxPorts: () => ipcRenderer.invoke('device:ubxPorts'),
+  // Device query — u-blox (CFG-VALGET for port config + active MSGOUT keys)
+  requestUbxStatus: () => ipcRenderer.invoke('device:ubxStatus'),
 
   // Device capabilities (emitted after connection + AUTHORIZATION query)
   onDeviceCapabilities: (cb) => {

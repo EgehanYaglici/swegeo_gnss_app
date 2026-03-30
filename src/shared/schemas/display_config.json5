@@ -33,6 +33,7 @@
         "GGA": {
           "id": "GGA",
           "type": "nmea",
+          "cfg_key_uart1": 0x209100BB,   // CFG-MSGOUT-NMEA_ID_GGA-UART1
           "description": "GPS Fix Data",
           "field_mapping": {
             "latitude": "lat_dm",
@@ -329,6 +330,45 @@
           ]
         },
 
+        // ============================================================
+        // 4. UBX MESSAGES (u-blox devices only)
+        // ============================================================
+        "UBX_NAV_PVT": {
+          "id": 263,
+          "type": "ubx",
+          "cfg_key_uart1": 0x20910006,
+          "description": "Navigation PVT (u-blox)",
+          "field_mapping": {
+            "latitude": "lat",
+            "longitude": "lon",
+            "height": "height"
+          },
+          "extra_fields": [
+            {"field": "hAcc", "label": "H. Accuracy", "format": "sigma", "unit": "m", "decimals": 3},
+            {"field": "vAcc", "label": "V. Accuracy", "format": "sigma", "unit": "m", "decimals": 3},
+            {"field": "fixType", "label": "Fix Type", "format": "int"},
+            {"field": "numSV", "label": "Satellites", "format": "int"},
+            {"field": "pDOP", "label": "PDOP", "format": "float", "decimals": 2}
+          ]
+        },
+
+        "UBX_NAV_POSLLH": {
+          "id": 258,
+          "type": "ubx",
+          "cfg_key_uart1": 0x2091002a,
+          "description": "Navigation Position LLH (u-blox)",
+          "field_mapping": {
+            "latitude": "lat",
+            "longitude": "lon",
+            "height": "height"
+          },
+          "extra_fields": [
+            {"field": "hAcc", "label": "H. Accuracy", "format": "sigma", "unit": "m", "decimals": 3},
+            {"field": "vAcc", "label": "V. Accuracy", "format": "sigma", "unit": "m", "decimals": 3},
+            {"field": "hMSL", "label": "MSL Height", "format": "float", "unit": "m", "decimals": 3}
+          ]
+        }
+
       }
     },
 
@@ -525,6 +565,7 @@
         "GSA": {
           "id": "GSA",
           "type": "nmea",
+          "cfg_key_uart1": 0x209100C0,   // CFG-MSGOUT-NMEA_ID_GSA-UART1
           "description": "DOP and Active Satellites",
           "field_mapping": {
             "pdop": "pdop",
@@ -539,6 +580,7 @@
         "GSV": {
           "id": "GSV",
           "type": "nmea",
+          "cfg_key_uart1": 0x209100C5,   // CFG-MSGOUT-NMEA_ID_GSV-UART1
           "description": "Satellites in View",
           "field_mapping": {
             "num_sats": "num_sats"
@@ -858,6 +900,54 @@
             {"field": "roll_sigma", "label": "Roll σ", "format": "float", "unit": "°", "decimals": 4},
             {"field": "pitch_sigma", "label": "Pitch σ", "format": "float", "unit": "°", "decimals": 4},
             {"field": "azimuth_sigma", "label": "Yaw σ", "format": "float", "unit": "°", "decimals": 4}
+          ]
+        }
+      }
+    },
+
+    // ============================================================
+    // RF HEALTH CAPABILITY (u-blox MON-RF)
+    // ============================================================
+    "rf_health": {
+      "standard_fields": [
+        {"name": "jamming_flags_l1", "label": "Jam Flags L1", "unit": "", "format": "int"},
+        {"name": "antenna_status", "label": "Antenna", "unit": "", "format": "int"},
+        {"name": "antenna_power", "label": "Ant Power", "unit": "", "format": "int"},
+        {"name": "noise_l1", "label": "Noise L1", "unit": "", "format": "int"},
+        {"name": "agc_l1", "label": "AGC L1", "unit": "", "format": "int"},
+        {"name": "jam_l1", "label": "Jam L1", "unit": "", "format": "int"}
+      ],
+      "sources": {
+        "UBX_MON_RF": {
+          "id": 2616,
+          "type": "ubx",
+          "description": "RF frontend monitor (MON-RF)",
+          "field_mapping": {
+            "jamming_flags_l1": "block0_flags",
+            "antenna_status": "block0_antStatus",
+            "antenna_power": "block0_antPower",
+            "noise_l1": "block0_noisePerMS",
+            "agc_l1": "block0_agcCnt",
+            "jam_l1": "block0_jamInd",
+            "noise_l2": "block1_noisePerMS",
+            "agc_l2": "block1_agcCnt",
+            "jam_l2": "block1_jamInd"
+          },
+          "extra_fields": [
+            {"field": "version", "label": "Version", "format": "int"},
+            {"field": "nBlocks", "label": "RF Blocks", "format": "int"},
+            {"field": "block0_blockId", "label": "L1 Block ID", "format": "int"},
+            {"field": "block1_blockId", "label": "L2/L5 Block ID", "format": "int"},
+            {"field": "block0_ofsI", "label": "L1 OfsI", "format": "int"},
+            {"field": "block0_magI", "label": "L1 MagI", "format": "int"},
+            {"field": "block0_ofsQ", "label": "L1 OfsQ", "format": "int"},
+            {"field": "block0_magQ", "label": "L1 MagQ", "format": "int"},
+            {"field": "block1_ofsI", "label": "L2 OfsI", "format": "int"},
+            {"field": "block1_magI", "label": "L2 MagI", "format": "int"},
+            {"field": "block1_ofsQ", "label": "L2 OfsQ", "format": "int"},
+            {"field": "block1_magQ", "label": "L2 MagQ", "format": "int"},
+            {"field": "block0_postStatus", "label": "POST0", "format": "int"},
+            {"field": "block1_postStatus", "label": "POST1", "format": "int"}
           ]
         }
       }

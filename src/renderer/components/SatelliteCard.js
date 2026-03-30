@@ -9,6 +9,8 @@ class SatelliteCard {
 
         this.currentSources = [];
         this.satellites = {};
+        this._currentFamily = null;  // 'bynav' | 'ublox' | null
+        this._allMessages = [];      // Full metadata from schema-loader
 
         // Active Satellite Cache (for GSA aggregation)
         // { "CONST_PRN": timestamp }
@@ -86,10 +88,12 @@ class SatelliteCard {
         document.body.appendChild(this.tooltip);
 
         const messages = await this.api.getMessages('satellites');
+        this._allMessages = messages; // Full metadata (type, device_family, cfg_key_uart1, …)
         const formattedMessages = messages.map(msg => ({
             id: msg.id,
             name: msg.name,
-            type: msg.type
+            type: msg.type,
+            device_family: msg.device_family
         }));
 
         this.sourceSelector = new SourceSelector('sat-source-selector', formattedMessages, { multiSelect: true });
@@ -120,6 +124,17 @@ class SatelliteCard {
             this.tooltip.classList.remove('visible');
             this.drawSkyplot();
         });
+
+        // ResizeObserver: canvas'ın kendisini gözlemle (parent değil).
+        // Canvas'ın CSS layout boyutu değişince (layout geçişi dahil) anında yeniden çiz.
+        // Canvas attribute (width/height) değişimi layout box'u tetiklemez → sonsuz döngü yok.
+        if (this.canvas) {
+            this._resizeObs = new ResizeObserver(() => {
+                const r = this.canvas.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0) this.drawSkyplot();
+            });
+            this._resizeObs.observe(this.canvas);
+        }
 
         // Initialize empty stats grid immediately for layout stability
         this.updateStats();
@@ -182,20 +197,37 @@ class SatelliteCard {
         window.dispatchEvent(new Event('log-changed'));
     }
 
+    // Apply device capability profile — called by Dashboard when device is detected.
+    applyCapabilities(caps) {
+        this._currentFamily = caps ? caps.family : null;
+        // Satellite card uses NMEA (GSV/GSA) which is supported by all device families.
+        // No source list filtering needed here.
+    }
+
     async _activateSource(msgId, msgName) {
         await this.api.subscribe('satellites', msgId, msgName);
-        const isNmea = ['GGA', 'RMC', 'GLL', 'GNS', 'VTG', 'GSA', 'GSV', 'ZDA'].includes(msgName);
-        const cmdName = isNmea ? `GP${msgName}` : msgName;
-        console.log(`[SatelliteCard] Activating ${msgName}`);
-        await this.api.sendCommand(`LOG ${cmdName} ONTIME 1`);
+        if (this._currentFamily === 'ublox') {
+            // u-blox outputs NMEA autonomously — no LOG ASCII command available
+            console.log(`[SatelliteCard] Subscribing ${msgName} (u-blox — NMEA pre-configured, no LOG command)`);
+        } else {
+            const isNmea = ['GGA', 'RMC', 'GLL', 'GNS', 'VTG', 'GSA', 'GSV', 'ZDA'].includes(msgName);
+            const cmdName = isNmea ? `GP${msgName}` : msgName;
+            console.log(`[SatelliteCard] Activating ${msgName}`);
+            await this.api.sendCommand(`LOG ${cmdName} ONTIME 1`);
+        }
     }
 
     async _deactivateSource(msgId, msgName) {
         await this.api.unsubscribe('satellites', msgId, msgName);
-        const isNmea = ['GGA', 'RMC', 'GLL', 'GNS', 'VTG', 'GSA', 'GSV', 'ZDA'].includes(msgName);
-        const cmdName = isNmea ? `GP${msgName}` : msgName;
-        console.log(`[SatelliteCard] Deactivating ${msgName}`);
-        await this.api.sendCommand(`UNLOG ${cmdName}`);
+        if (this._currentFamily === 'ublox') {
+            // u-blox: nothing to unlog, just unsubscribe (done above)
+            console.log(`[SatelliteCard] Unsubscribing ${msgName} (u-blox — no UNLOG command)`);
+        } else {
+            const isNmea = ['GGA', 'RMC', 'GLL', 'GNS', 'VTG', 'GSA', 'GSV', 'ZDA'].includes(msgName);
+            const cmdName = isNmea ? `GP${msgName}` : msgName;
+            console.log(`[SatelliteCard] Deactivating ${msgName}`);
+            await this.api.sendCommand(`UNLOG ${cmdName}`);
+        }
     }
 
     _syncToggleState() {

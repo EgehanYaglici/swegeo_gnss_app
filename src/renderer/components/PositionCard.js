@@ -30,46 +30,54 @@ class PositionCard {
     }
 
     async init() {
-        // Load available position sources
+        // Load ALL available position sources â€” cached for applyCapabilities() filtering
         const posMessages = await this.api.getMessages('position');
-        const formattedPosMessages = posMessages.map(msg => ({
+        this._allPosMessages = posMessages.map(msg => ({
             id: msg.id,
             name: msg.name,
             type: msg.type,
-            log_command: msg.log_command
+            log_command: msg.log_command,
+            requires: msg.requires || null,
+            device_family: msg.device_family || null,
+            cfg_keys: msg.cfg_keys || null,
+            cfg_key_uart1: msg.cfg_key_uart1 || msg.cfg_keys?.uart1 || null
         }));
 
-        // Load available heading sources
+        // Load ALL available heading sources â€” same pattern
         const hdgMessages = await this.api.getMessages('heading');
-        const formattedHdgMessages = [
-            { id: 'NONE', name: 'No Heading', type: 'ascii', log_command: null },
+        this._allHdgMessages = [
+            { id: 'NONE', name: 'No Heading', type: 'ascii', log_command: null, requires: null, device_family: null, cfg_keys: null, cfg_key_uart1: null },
             ...hdgMessages.map(msg => ({
                 id: msg.id,
                 name: msg.name,
                 type: msg.type,
-                log_command: msg.log_command
+                log_command: msg.log_command,
+                requires: msg.requires || null,
+                device_family: msg.device_family || null,
+                cfg_keys: msg.cfg_keys || null,
+                cfg_key_uart1: msg.cfg_key_uart1 || msg.cfg_keys?.uart1 || null
             }))
         ];
 
-        // Create SourceSelectors
-        this.posSourceSelector = new SourceSelector('pos-source-selector', formattedPosMessages);
-        this.hdgSourceSelector = new SourceSelector('hdg-source-selector', formattedHdgMessages);
+        // Create SourceSelectors (start with full list; applyCapabilities will filter later)
+        this.posSourceSelector = new SourceSelector('pos-source-selector', this._allPosMessages);
+        this.hdgSourceSelector = new SourceSelector('hdg-source-selector', this._allHdgMessages);
 
         // Bind Toggle Click
         this.toggleBtn.onclick = () => this.toggleActive();
 
         // Default: Select first pos source but stay INACTIVE
-        if (posMessages.length > 0) {
-            const first = posMessages[0];
+        if (this._allPosMessages.length > 0) {
+            const first = this._allPosMessages[0];
             this.posSourceSelector.setCurrentSource(first.id, first.name);
-            this.currentPosSource = { id: first.id, name: first.name, log_command: first.log_command };
+            this.currentPosSource = { ...first };
         }
 
         // Default: Select first hdg source but stay INACTIVE
-        if (formattedHdgMessages.length > 0) {
-            const first = formattedHdgMessages[0];
+        if (this._allHdgMessages.length > 0) {
+            const first = this._allHdgMessages[0];
             this.hdgSourceSelector.setCurrentSource(first.id, first.name);
-            this.currentHdgSource = { id: first.id, name: first.name, log_command: first.log_command };
+            this.currentHdgSource = { ...first };
         }
 
         // Position Source change handler
@@ -105,31 +113,84 @@ class PositionCard {
         this.api.onData('heading', (data) => this.updateHeading(data));
     }
 
-    async _handleSourceChange(capability, currentSrc, newMsgId, newMsgName, selectorInstance, setSourceCallback) {
-        // 1. Unsubscribe from previous source and conditionally UNLOG
-        if (this.isActive && currentSrc && currentSrc.id !== 'NONE') {
-            try {
-                await this.api.unsubscribe(capability, currentSrc.id, currentSrc.name);
-                const oldCmdName = this._getCommandName(currentSrc);
+    /**
+     * Called by Dashboard when device capabilities are known (or reset on disconnect).
+     * Filters source selectors to show only messages appropriate for the connected device family.
+     */
+    applyCapabilities(caps) {
+        this._currentFamily = caps ? caps.family : null;
+        const detected = !!(caps && caps.detected);
 
-                // NTRIP handling only for position (GGA)
-                const shouldKeepGGA = await this._shouldKeepGGA(oldCmdName);
+        // Helper: should a message source be shown for the current device?
+        const shouldShow = (msg) => {
+            const df = msg.device_family;
+            if (!detected) return true;            // Unknown device â€” show all
 
-                if (shouldKeepGGA) {
-                    console.log(`[PositionCard] Keeping ${oldCmdName} device command active for NTRIP`);
-                } else if (oldCmdName) {
-                    const unlogCmd = `UNLOG ${oldCmdName}`;
-                    console.log(`[PositionCard] Sending UNLOG: ${unlogCmd}`);
-                    await this.api.sendCommand(unlogCmd);
-                }
-            } catch (e) {
-                console.error(`[PositionCard] Error unlogging old ${capability} source:`, e);
+            // Family filter (NMEA has null family and remains visible)
+            if (df != null && df !== this._currentFamily) return false;
+
+            // u-blox: hide NMEA sources without a concrete CFG-MSGOUT key mapping
+            if (this._currentFamily === 'ublox' && msg.type === 'nmea' && msg.id !== 'NONE' && !msg.cfg_keys) {
+                return false;
+            }
+
+            // Capability requirement filter (e.g. ins / dual_ant / rf_monitor)
+            if (msg.requires && caps[msg.requires] === false) return false;
+
+            return true;
+        };
+
+        // Filter position messages
+        const filteredPos = this._allPosMessages.filter(shouldShow);
+        this.posSourceSelector.setAvailableMessages(filteredPos);
+
+        // If current selection was filtered out, switch to first available
+        if (this.currentPosSource) {
+            const still = filteredPos.find(m => String(m.id) === String(this.currentPosSource.id));
+            if (!still && filteredPos.length > 0) {
+                const first = filteredPos[0];
+                this.posSourceSelector.setCurrentSource(first.id, first.name);
+                this.currentPosSource = { ...first };
             }
         }
 
-        // 2. Resolve the new source object
-        const msgObj = selectorInstance.availableMessages.find(m => m.id == newMsgId);
-        const newSrcResolved = { id: newMsgId, name: newMsgName, log_command: msgObj?.log_command };
+        // Filter heading messages
+        const filteredHdg = this._allHdgMessages.filter(shouldShow);
+        this.hdgSourceSelector.setAvailableMessages(filteredHdg);
+
+        if (this.currentHdgSource && this.currentHdgSource.id !== 'NONE') {
+            const still = filteredHdg.find(m => String(m.id) === String(this.currentHdgSource.id));
+            if (!still && filteredHdg.length > 0) {
+                const first = filteredHdg[0];
+                this.hdgSourceSelector.setCurrentSource(first.id, first.name);
+                this.currentHdgSource = { ...first };
+            }
+        }
+    }
+
+    async _handleSourceChange(capability, currentSrc, newMsgId, newMsgName, selectorInstance, setSourceCallback) {
+        // 1. Unsubscribe from previous source and conditionally UNLOG / disable UBX
+        if (this.isActive && currentSrc && currentSrc.id !== 'NONE') {
+            try {
+                await this.api.unsubscribe(capability, currentSrc.id, currentSrc.name);
+                await this._deactivateSource(currentSrc, capability);
+            } catch (e) {
+                console.error(`[PositionCard] Error deactivating old ${capability} source:`, e);
+            }
+        }
+
+        // 2. Resolve the new source object (carry full metadata: type, device_family, cfg_key_uart1)
+        const msgObj = selectorInstance.availableMessages.find(m => String(m.id) === String(newMsgId));
+        const newSrcResolved = {
+            id: newMsgId,
+            name: newMsgName,
+            log_command: msgObj?.log_command || null,
+            type: msgObj?.type || null,
+            requires: msgObj?.requires || null,
+            device_family: msgObj?.device_family || null,
+            cfg_keys: msgObj?.cfg_keys || null,
+            cfg_key_uart1: msgObj?.cfg_key_uart1 || null
+        };
 
         // 3. Update current source state via callback
         setSourceCallback(newSrcResolved);
@@ -143,7 +204,7 @@ class PositionCard {
             }
         }
 
-        // 5. Subscribe and LOG new source if active
+        // 5. Subscribe and activate new source if card is active
         if (this.isActive && newMsgId !== 'NONE') {
             try {
                 await this.api.subscribe(capability, newMsgId, newMsgName);
@@ -153,20 +214,10 @@ class PositionCard {
             }
 
             try {
-                // Must use the freshly resolved source variable to avoid race conditions!
-                const cmdName = this._getCommandName(newSrcResolved);
-                if (cmdName) {
-                    const rateHz = selectorInstance.getCurrentRate() || 1;
-                    const period = 1.0 / Number(rateHz);
-                    const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-
-                    console.log(`[PositionCard] Sending LOG: ${logCmd}`);
-                    await this.api.sendCommand(logCmd);
-                } else {
-                    console.error(`[PositionCard] Could not determine command name for ${capability}:`, newSrcResolved);
-                }
+                const rateHz = selectorInstance.getCurrentRate() || 1;
+                await this._activateSource(newSrcResolved, rateHz);
             } catch (e) {
-                console.error(`[PositionCard] Error sending LOG command for ${capability}:`, e);
+                console.error(`[PositionCard] Error activating ${capability} source:`, e);
             }
         } else if (newMsgId === 'NONE') {
             selectorInstance.stopShimmer();
@@ -178,14 +229,61 @@ class PositionCard {
         window.dispatchEvent(new Event('log-changed'));
     }
 
+    /** Send the appropriate rate command for a source (UBX CFG-VALSET or BYNAV LOG). */
+    async _activateSource(src, rateHz) {
+        if (!src || src.id === 'NONE') return;
+
+        const rateDiv = Math.max(1, Math.min(255, Number(rateHz) || 1));
+        const isUbloxConfigurable = this._currentFamily === 'ublox' && (src.type === 'ubx' || (src.type === 'nmea' && src.cfg_keys));
+
+        if (isUbloxConfigurable) {
+            await this._applyUbxRateForSource(src, rateDiv, 'enable');
+        } else if (src.type === 'nmea' && this._currentFamily === 'ublox') {
+            // Fallback: keep subscription-only behavior if no cfg_keys exist.
+            console.log(`[PositionCard] NMEA on u-blox (no CFG key): ${src.name}`);
+        } else {
+            // BYNAV ASCII / Binary / NMEA: send LOG command
+            const cmdName = this._getCommandName(src);
+            if (cmdName) {
+                const period = 1.0 / Number(rateHz);
+                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
+                console.log(`[PositionCard] Sending LOG: ${logCmd}`);
+                await this.api.sendCommand(logCmd);
+            }
+        }
+    }
+
+    /** Send UNLOG or UBX disable for a source. */
+    async _deactivateSource(src, capability) {
+        if (!src || src.id === 'NONE') return;
+
+        const cmdName = this._getCommandName(src);
+        const shouldKeepGGA = await this._shouldKeepGGA(cmdName);
+
+        const isUbloxConfigurable = this._currentFamily === 'ublox' && (src.type === 'ubx' || (src.type === 'nmea' && src.cfg_keys));
+        if (isUbloxConfigurable) {
+            if (shouldKeepGGA) {
+                console.log(`[PositionCard] Keeping ${cmdName} active for NTRIP`);
+                return;
+            }
+            await this._applyUbxRateForSource(src, 0, 'disable');
+        } else if (src.type === 'nmea' && this._currentFamily === 'ublox') {
+            // Fallback path if a NMEA sentence has no key mapping.
+        } else {
+            // NTRIP handling â€” keep GGA alive if NTRIP is connected
+            if (shouldKeepGGA) {
+                console.log(`[PositionCard] Keeping ${cmdName} active for NTRIP`);
+            } else if (cmdName) {
+                console.log(`[PositionCard] Sending UNLOG: UNLOG ${cmdName}`);
+                await this.api.sendCommand(`UNLOG ${cmdName}`);
+            }
+        }
+    }
+
     async _handleRateChange(currentSrc, rate) {
         try {
-            if (currentSrc) {
-                const cmdName = this._getCommandName(currentSrc);
-                const period = 1.0 / Number(rate);
-                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-                console.log(`Sending rate command: ${logCmd}`);
-                await this.api.sendCommand(logCmd);
+            if (currentSrc && currentSrc.id !== 'NONE' && this.isActive) {
+                await this._activateSource(currentSrc, rate);
                 window.dispatchEvent(new Event('log-changed'));
             }
         } catch (err) {
@@ -197,6 +295,42 @@ class PositionCard {
         const ntripStatus = await this.api.getNtripStatus();
         const isGGA = cmdName && String(cmdName).toUpperCase().includes('GGA');
         return ntripStatus && ntripStatus.connected && isGGA;
+    }
+
+    _buildUbxOpsForSource(src, rateDiv) {
+        if (!src) return [];
+        const cfgKeys = src.cfg_keys || (src.cfg_key_uart1 ? { uart1: src.cfg_key_uart1 } : null);
+        if (!cfgKeys) return [];
+
+        const ops = [];
+        for (const [port, key] of Object.entries(cfgKeys)) {
+            if (key == null) continue;
+            ops.push({
+                msg: src.name,
+                port: String(port).toUpperCase(),
+                key,
+                rateDiv
+            });
+        }
+        return ops;
+    }
+
+    async _applyUbxRateForSource(src, rateDiv, action) {
+        const ops = this._buildUbxOpsForSource(src, rateDiv);
+        if (ops.length === 0) return;
+
+        try {
+            const result = await this.api.applyUbxRates(ops);
+            if (!result?.ok) {
+                const failed = (result?.results || []).filter(r => !r.ok);
+                const summary = failed.slice(0, 2).map(f => `${f.msg}/${f.port}:${f.status}`).join(', ');
+                console.warn(`[PositionCard] UBX ${action} partial failure for ${src.name}: ${summary}`);
+            } else {
+                console.log(`[PositionCard] UBX ${action} confirmed: ${src.name} (${ops.length} port op)`);
+            }
+        } catch (e) {
+            console.error(`[PositionCard] UBX ${action} failed for ${src.name}:`, e);
+        }
     }
 
     async toggleActive() {
@@ -212,29 +346,19 @@ class PositionCard {
             if (this.hdgSourceContainer) this.hdgSourceContainer.classList.add('active');
 
             // Activate Position
-            if (this.currentPosSource) {
+            if (this.currentPosSource && this.currentPosSource.id !== 'NONE') {
                 await this.api.subscribe('position', this.currentPosSource.id, this.currentPosSource.name);
                 this.posSourceSelector.startShimmer();
-
-                const cmdName = this._getCommandName(this.currentPosSource);
                 const rateHz = this.posSourceSelector.getCurrentRate() || 1;
-                const period = 1.0 / Number(rateHz);
-                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-                console.log(`[PositionCard] Sending LOG command on activate: ${logCmd}`);
-                await this.api.sendCommand(logCmd);
+                await this._activateSource(this.currentPosSource, rateHz);
             }
 
             // Activate Heading
             if (this.currentHdgSource && this.currentHdgSource.id !== 'NONE') {
                 await this.api.subscribe('heading', this.currentHdgSource.id, this.currentHdgSource.name);
                 this.hdgSourceSelector.startShimmer();
-
-                const cmdName = this._getCommandName(this.currentHdgSource);
                 const rateHz = this.hdgSourceSelector.getCurrentRate() || 1;
-                const period = 1.0 / Number(rateHz);
-                const logCmd = `LOG ${cmdName} ONTIME ${period.toFixed(2) * 1}`;
-                console.log(`[PositionCard] Sending LOG command on activate: ${logCmd}`);
-                await this.api.sendCommand(logCmd);
+                await this._activateSource(this.currentHdgSource, rateHz);
             }
 
         } else {
@@ -250,30 +374,14 @@ class PositionCard {
             if (this.currentPosSource && this.currentPosSource.id !== 'NONE') {
                 await this.api.unsubscribe('position', this.currentPosSource.id, this.currentPosSource.name);
                 this.posSourceSelector.stopShimmer();
-
-                const cmdName = this._getCommandName(this.currentPosSource);
-                const shouldKeepGGA = await this._shouldKeepGGA(cmdName);
-
-                if (shouldKeepGGA) {
-                    console.log(`[PositionCard] Keeping ${cmdName} active for NTRIP connection (deactivate)`);
-                } else if (cmdName) {
-                    const unlogCmd = `UNLOG ${cmdName}`;
-                    console.log(`[PositionCard] Sending UNLOG on deactivate: ${unlogCmd}`);
-                    await this.api.sendCommand(unlogCmd);
-                }
+                await this._deactivateSource(this.currentPosSource, 'position');
             }
 
             // Deactivate Heading
             if (this.currentHdgSource && this.currentHdgSource.id !== 'NONE') {
                 await this.api.unsubscribe('heading', this.currentHdgSource.id, this.currentHdgSource.name);
                 this.hdgSourceSelector.stopShimmer();
-
-                const cmdName = this._getCommandName(this.currentHdgSource);
-                if (cmdName) {
-                    const unlogCmd = `UNLOG ${cmdName}`;
-                    console.log(`[PositionCard] Sending UNLOG on deactivate: ${unlogCmd}`);
-                    await this.api.sendCommand(unlogCmd);
-                }
+                await this._deactivateSource(this.currentHdgSource, 'heading');
             }
         }
 

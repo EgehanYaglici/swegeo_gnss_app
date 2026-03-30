@@ -1,0 +1,689 @@
+// UBX Message Definitions — u-blox ZED-F9P / ZED-F9R / ZED-X20
+// Kaynak: ZED-F9P Interface Description (UBX-18010854) + u-blox X20 HPG-2.03 JSON schema
+//
+// ID = (ubx_class << 8) | ubx_id  →  BYNAV ID aralığıyla pratikte çakışmaz,
+//   zaten aynı anda iki family bağlı olmaz.
+//
+// special_parser: true  → payload_length değişken, binary-parser.js'de özel handler gerekir.
+// cfg_key_uart1         → VALSET ile output rate ayarlamak için CFG key (F9/X20 serisi).
+// requires              → null=her model, "ins"=F9R/dead-reckoning, "rf_monitor"=F9P+F9R
+
+{
+  // ════════════════════════════════════════════════════════════════
+  // NAV CLASS  (ubx_class = 0x01 = 1)
+  // ════════════════════════════════════════════════════════════════
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-PVT  (0x01 0x07)  —  92 byte  —  Position Velocity Time
+  // En kapsamlı tek mesaj: konum + hız + zaman + RTK durumu + uydu sayısı
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_PVT: {
+    requires: null,
+    label: "Navigation PVT Solution",
+    description: "Position, Velocity and Time in one message. Fix type, RTK carrier solution flag, accuracy estimates.",
+    binary: {
+      tag:             "UBX-NAV-PVT",
+      id:              263,            // 0x0107
+      ubx_class:       1,              // NAV
+      ubx_id:          7,              // PVT
+      cfg_key_uart1:   0x20910006,     // CFG-MSGOUT-UBX_NAV_PVT_UART1
+      default_rate_hz: 1,
+      payload_length:  92,
+      fields: [
+        { name: "iTOW",      type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "year",      type: "uint16", unit: "",    note: "Year (UTC)" },
+        { name: "month",     type: "uint8",  unit: "",    note: "Month 1..12 (UTC)" },
+        { name: "day",       type: "uint8",  unit: "",    note: "Day 1..31 (UTC)" },
+        { name: "hour",      type: "uint8",  unit: "",    note: "Hour 0..23 (UTC)" },
+        { name: "min",       type: "uint8",  unit: "",    note: "Minute 0..59 (UTC)" },
+        { name: "sec",       type: "uint8",  unit: "",    note: "Second 0..60 (UTC)" },
+        { name: "valid",     type: "uint8",  unit: "",    note: "bit0=validDate bit1=validTime bit2=fullyResolved bit3=validMag" },
+        { name: "tAcc",      type: "uint32", unit: "ns",  note: "Time accuracy estimate (ns)" },
+        { name: "nano",      type: "int32",  unit: "ns",  note: "Fraction of second -1e9..1e9 (ns)" },
+        { name: "fixType",   type: "uint8",  unit: "",    note: "0=no fix 1=dead reckoning 2=2D 3=3D 4=GNSS+DR 5=time only" },
+        { name: "flags",     type: "uint8",  unit: "",    note: "bit0=gnssFixOK bit1=diffSoln bit5=headVehValid bit6-7=carrSoln(0=none 1=float 2=fixed)" },
+        { name: "flags2",    type: "uint8",  unit: "",    note: "bit0=confirmedAvai bit1=confirmedDate bit2=confirmedTime" },
+        { name: "numSV",     type: "uint8",  unit: "",    note: "Number of satellites used in navigation solution" },
+        { name: "lon",       type: "int32",  unit: "deg", note: "Longitude", scale: 1e-7 },
+        { name: "lat",       type: "int32",  unit: "deg", note: "Latitude",  scale: 1e-7 },
+        { name: "height",    type: "int32",  unit: "m",   note: "Height above ellipsoid (mm → m)", scale: 0.001 },
+        { name: "hMSL",      type: "int32",  unit: "m",   note: "Height above mean sea level (mm → m)", scale: 0.001 },
+        { name: "hAcc",      type: "uint32", unit: "m",   note: "Horizontal accuracy estimate (mm → m)", scale: 0.001 },
+        { name: "vAcc",      type: "uint32", unit: "m",   note: "Vertical accuracy estimate (mm → m)", scale: 0.001 },
+        { name: "velN",      type: "int32",  unit: "m/s", note: "NED north velocity (mm/s → m/s)", scale: 0.001 },
+        { name: "velE",      type: "int32",  unit: "m/s", note: "NED east velocity (mm/s → m/s)",  scale: 0.001 },
+        { name: "velD",      type: "int32",  unit: "m/s", note: "NED down velocity (mm/s → m/s)",  scale: 0.001 },
+        { name: "gSpeed",    type: "int32",  unit: "m/s", note: "Ground speed 2-D (mm/s → m/s)",   scale: 0.001 },
+        { name: "headMot",   type: "int32",  unit: "deg", note: "Heading of motion 2-D (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "sAcc",      type: "uint32", unit: "m/s", note: "Speed accuracy (mm/s → m/s)", scale: 0.001 },
+        { name: "headAcc",   type: "uint32", unit: "deg", note: "Heading accuracy (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "pDOP",      type: "uint16", unit: "",    note: "Position DOP (0.01 → actual)", scale: 0.01 },
+        { name: "flags3",    type: "uint16", unit: "",    note: "bit0=invalidLlh bit1-4=lastCorrectionAge bit8=authTime bit9=nmaFixStatus" },
+        { name: "_res0",     type: "uint32", unit: "",    note: "Reserved (4 bytes)" },
+        { name: "headVeh",   type: "int32",  unit: "deg", note: "Heading of vehicle 2-D (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "magDec",    type: "int16",  unit: "deg", note: "Magnetic declination (1e-2 deg → deg)", scale: 0.01 },
+        { name: "magAcc",    type: "uint16", unit: "deg", note: "Magnetic declination accuracy (1e-2 deg → deg)", scale: 0.01 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-POSLLH  (0x01 0x02)  —  28 byte  —  Geodetic Position Solution
+  // PVT'den daha hafif: sadece LLH konum + doğruluk
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_POSLLH: {
+    requires: null,
+    label: "Geodetic Position Solution",
+    description: "Latitude, longitude and height above ellipsoid and MSL with horizontal and vertical accuracy estimates.",
+    binary: {
+      tag:             "UBX-NAV-POSLLH",
+      id:              258,            // 0x0102
+      ubx_class:       1,
+      ubx_id:          2,
+      cfg_key_uart1:   0x2091002a,    // CFG-MSGOUT-UBX_NAV_POSLLH_UART1
+      default_rate_hz: 1,
+      payload_length:  28,
+      fields: [
+        { name: "iTOW",   type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "lon",    type: "int32",  unit: "deg", note: "Longitude (1e-7 deg → deg)", scale: 1e-7 },
+        { name: "lat",    type: "int32",  unit: "deg", note: "Latitude (1e-7 deg → deg)",  scale: 1e-7 },
+        { name: "height", type: "int32",  unit: "m",   note: "Height above ellipsoid (mm → m)", scale: 0.001 },
+        { name: "hMSL",   type: "int32",  unit: "m",   note: "Height above mean sea level (mm → m)", scale: 0.001 },
+        { name: "hAcc",   type: "uint32", unit: "m",   note: "Horizontal accuracy estimate (mm → m)", scale: 0.001 },
+        { name: "vAcc",   type: "uint32", unit: "m",   note: "Vertical accuracy estimate (mm → m)", scale: 0.001 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-STATUS  (0x01 0x03)  —  16 byte  —  Receiver Navigation Status
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_STATUS: {
+    requires: null,
+    label: "Receiver Navigation Status",
+    description: "Navigation fix type, fix status flags, time-to-first-fix and uptime.",
+    binary: {
+      tag:             "UBX-NAV-STATUS",
+      id:              259,            // 0x0103
+      ubx_class:       1,
+      ubx_id:          3,
+      cfg_key_uart1:   0x2091001a,    // CFG-MSGOUT-UBX_NAV_STATUS_UART1
+      default_rate_hz: 1,
+      payload_length:  16,
+      fields: [
+        { name: "iTOW",    type: "uint32", unit: "ms", note: "GPS time of week (ms)" },
+        { name: "gpsFix",  type: "uint8",  unit: "",   note: "GPS fix: 0=no fix 1=DR 2=2D 3=3D 4=GNSS+DR 5=time only" },
+        { name: "flags",   type: "uint8",  unit: "",   note: "bit0=gpsFixOk bit1=diffSoln bit2=wknSet bit3=towSet" },
+        { name: "fixStat", type: "uint8",  unit: "",   note: "bit0=diffCorr bit1=carrSolnValid bit6-7=mapMatching" },
+        { name: "flags2",  type: "uint8",  unit: "",   note: "bit0-2=psmState bit3-4=spoofDetState bit6-7=carrSoln(0=none 1=float 2=fixed)" },
+        { name: "ttff",    type: "uint32", unit: "ms", note: "Time to first fix (ms)" },
+        { name: "msss",    type: "uint32", unit: "ms", note: "Milliseconds since receiver start" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-DOP  (0x01 0x04)  —  18 byte  —  Dilution of Precision
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_DOP: {
+    requires: null,
+    label: "Dilution of Precision",
+    description: "Geometric, position, time, vertical, horizontal, northing and easting DOP values.",
+    binary: {
+      tag:             "UBX-NAV-DOP",
+      id:              260,            // 0x0104
+      ubx_class:       1,
+      ubx_id:          4,
+      cfg_key_uart1:   0x20910038,    // CFG-MSGOUT-UBX_NAV_DOP_UART1
+      default_rate_hz: 1,
+      payload_length:  18,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week (ms)" },
+        { name: "gDOP", type: "uint16", unit: "",   note: "Geometric DOP (0.01 → actual)",  scale: 0.01 },
+        { name: "pDOP", type: "uint16", unit: "",   note: "Position DOP (0.01 → actual)",   scale: 0.01 },
+        { name: "tDOP", type: "uint16", unit: "",   note: "Time DOP (0.01 → actual)",       scale: 0.01 },
+        { name: "vDOP", type: "uint16", unit: "",   note: "Vertical DOP (0.01 → actual)",   scale: 0.01 },
+        { name: "hDOP", type: "uint16", unit: "",   note: "Horizontal DOP (0.01 → actual)", scale: 0.01 },
+        { name: "nDOP", type: "uint16", unit: "",   note: "Northing DOP (0.01 → actual)",   scale: 0.01 },
+        { name: "eDOP", type: "uint16", unit: "",   note: "Easting DOP (0.01 → actual)",    scale: 0.01 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-ATT  (0x01 0x05)  —  32 byte  —  Attitude Solution
+  // Sadece ZED-F9R (IMU + dead reckoning modelinde)
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_ATT: {
+    requires: "ins",                  // sadece F9R / dead reckoning modelde
+    label: "Vehicle Attitude",
+    description: "Vehicle attitude: roll, pitch and heading from sensor fusion (ZED-F9R only).",
+    binary: {
+      tag:             "UBX-NAV-ATT",
+      id:              261,            // 0x0105
+      ubx_class:       1,
+      ubx_id:          5,
+      cfg_key_uart1:   0x20910005,    // CFG-MSGOUT-UBX_NAV_ATT_UART1
+      default_rate_hz: 1,
+      payload_length:  32,
+      fields: [
+        { name: "iTOW",       type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "version",    type: "uint8",  unit: "",    note: "Message version" },
+        { name: "_res0",      type: "uint8",  unit: "",    note: "Reserved" },
+        { name: "_res1",      type: "uint16", unit: "",    note: "Reserved" },
+        { name: "roll",       type: "int32",  unit: "deg", note: "Vehicle roll (1e-5 deg → deg)",    scale: 1e-5 },
+        { name: "pitch",      type: "int32",  unit: "deg", note: "Vehicle pitch (1e-5 deg → deg)",   scale: 1e-5 },
+        { name: "heading",    type: "int32",  unit: "deg", note: "Vehicle heading (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "accRoll",    type: "uint32", unit: "deg", note: "Roll accuracy (1e-5 deg → deg)",    scale: 1e-5 },
+        { name: "accPitch",   type: "uint32", unit: "deg", note: "Pitch accuracy (1e-5 deg → deg)",   scale: 1e-5 },
+        { name: "accHeading", type: "uint32", unit: "deg", note: "Heading accuracy (1e-5 deg → deg)", scale: 1e-5 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-ODO  (0x01 0x09)  —  20 byte  —  Odometer Solution
+  // Trip and total distance. ZED-F9R'de anlamlı, F9P'de opsiyonel.
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_ODO: {
+    requires: null,
+    label: "Odometer Solution",
+    description: "Trip distance and total distance since last reset. Most useful on ZED-F9R with dead reckoning.",
+    binary: {
+      tag:             "UBX-NAV-ODO",
+      id:              265,            // 0x0109
+      ubx_class:       1,
+      ubx_id:          9,
+      cfg_key_uart1:   0x2091007f,    // CFG-MSGOUT-UBX_NAV_ODO_UART1
+      default_rate_hz: 1,
+      payload_length:  20,
+      fields: [
+        { name: "version",       type: "uint8",  unit: "",  note: "Message version (0x00)" },
+        { name: "_res0",         type: "uint8",  unit: "",  note: "Reserved" },
+        { name: "_res1",         type: "uint16", unit: "",  note: "Reserved" },
+        { name: "iTOW",          type: "uint32", unit: "ms", note: "GPS time of week (ms)" },
+        { name: "distance",      type: "uint32", unit: "m",  note: "Ground distance since last reset (m)" },
+        { name: "totalDistance", type: "uint32", unit: "m",  note: "Total cumulative ground distance (m)" },
+        { name: "distanceStd",   type: "uint32", unit: "m",  note: "Ground distance accuracy (1 sigma, m)" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-VELNED  (0x01 0x12)  —  36 byte  —  NED Velocity Solution
+  // 3-boyutlu hız: N/E/D bileşenleri + toplam hız + yer izi açısı
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_VELNED: {
+    requires: null,
+    label: "NED Velocity Solution",
+    description: "North, East, Down velocity components with ground speed, heading and accuracy estimates.",
+    binary: {
+      tag:             "UBX-NAV-VELNED",
+      id:              274,            // 0x0112
+      ubx_class:       1,
+      ubx_id:          18,
+      cfg_key_uart1:   0x20910043,    // CFG-MSGOUT-UBX_NAV_VELNED_UART1
+      default_rate_hz: 1,
+      payload_length:  36,
+      fields: [
+        { name: "iTOW",   type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "velN",   type: "int32",  unit: "m/s", note: "NED north velocity (cm/s → m/s)", scale: 0.01 },
+        { name: "velE",   type: "int32",  unit: "m/s", note: "NED east velocity (cm/s → m/s)",  scale: 0.01 },
+        { name: "velD",   type: "int32",  unit: "m/s", note: "NED down velocity (cm/s → m/s)",  scale: 0.01 },
+        { name: "speed",  type: "uint32", unit: "m/s", note: "3-D speed (cm/s → m/s)", scale: 0.01 },
+        { name: "gSpeed", type: "uint32", unit: "m/s", note: "Ground speed 2-D (cm/s → m/s)", scale: 0.01 },
+        { name: "heading",type: "int32",  unit: "deg", note: "Heading of motion 2-D (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "sAcc",   type: "uint32", unit: "m/s", note: "Speed accuracy estimate (cm/s → m/s)", scale: 0.01 },
+        { name: "cAcc",   type: "uint32", unit: "deg", note: "Course/heading accuracy estimate (1e-5 deg → deg)", scale: 1e-5 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-HPPOSLLH  (0x01 0x14)  —  36 byte  —  High Precision Geodetic Position
+  // Tam doğruluktaki konum: standart LLH + yüksek hassasiyetli ek bileşen
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_HPPOSLLH: {
+    requires: null,
+    label: "High Precision Geodetic Position",
+    description: "High precision latitude, longitude and height (sub-mm accuracy). Standard LLH plus high-precision fractional components (1e-9 deg).",
+    binary: {
+      tag:             "UBX-NAV-HPPOSLLH",
+      id:              276,            // 0x0114
+      ubx_class:       1,
+      ubx_id:          20,
+      cfg_key_uart1:   0x20910034,    // CFG-MSGOUT-UBX_NAV_HPPOSLLH_UART1
+      default_rate_hz: 1,
+      payload_length:  36,
+      fields: [
+        { name: "version",  type: "uint8",  unit: "",    note: "Message version (0x00)" },
+        { name: "_res0",    type: "uint8",  unit: "",    note: "Reserved" },
+        { name: "_res1",    type: "uint8",  unit: "",    note: "Reserved" },
+        { name: "flags",    type: "uint8",  unit: "",    note: "bit0=invalidLlh (if set, position fields are invalid)" },
+        { name: "iTOW",     type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "lon",      type: "int32",  unit: "deg", note: "Longitude (1e-7 deg → deg)", scale: 1e-7 },
+        { name: "lat",      type: "int32",  unit: "deg", note: "Latitude (1e-7 deg → deg)",  scale: 1e-7 },
+        { name: "height",   type: "int32",  unit: "mm",  note: "Height above ellipsoid (mm)" },
+        { name: "hMSL",     type: "int32",  unit: "mm",  note: "Height above MSL (mm)" },
+        { name: "lonHp",    type: "int8",   unit: "deg", note: "HP longitude component (1e-9 deg → deg); add to lon", scale: 1e-9 },
+        { name: "latHp",    type: "int8",   unit: "deg", note: "HP latitude component (1e-9 deg → deg); add to lat",  scale: 1e-9 },
+        { name: "heightHp", type: "int8",   unit: "mm",  note: "HP height above ellipsoid (0.1mm → mm); add to height", scale: 0.1 },
+        { name: "hMSLHp",   type: "int8",   unit: "mm",  note: "HP height above MSL (0.1mm → mm); add to hMSL", scale: 0.1 },
+        { name: "hAcc",     type: "uint32", unit: "m",   note: "Horizontal accuracy (0.1mm → m)", scale: 0.0001 },
+        { name: "vAcc",     type: "uint32", unit: "m",   note: "Vertical accuracy (0.1mm → m)",   scale: 0.0001 }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-TIMEGPS  (0x01 0x20)  —  16 byte  —  GPS Time Solution
+  // GPS hafta + TOW + artık saniye + doğruluk
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_TIMEGPS: {
+    requires: null,
+    label: "GPS Time Solution",
+    description: "GPS time of week, week number, GPS-UTC leap seconds and time accuracy estimate.",
+    binary: {
+      tag:             "UBX-NAV-TIMEGPS",
+      id:              288,            // 0x0120
+      ubx_class:       1,
+      ubx_id:          32,
+      cfg_key_uart1:   0x20910048,    // CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1
+      default_rate_hz: 1,
+      payload_length:  16,
+      fields: [
+        { name: "iTOW",  type: "uint32", unit: "ms", note: "GPS time of week (ms)" },
+        { name: "fTOW",  type: "int32",  unit: "ns", note: "Fractional part of iTOW (ns), range -500000000..500000000" },
+        { name: "week",  type: "int16",  unit: "",   note: "GPS week number" },
+        { name: "leapS", type: "int8",   unit: "s",  note: "GPS-UTC leap seconds (only valid if leapSValid)" },
+        { name: "valid", type: "uint8",  unit: "",   note: "bit0=towValid bit1=weekValid bit2=leapSValid" },
+        { name: "tAcc",  type: "uint32", unit: "ns", note: "Time accuracy estimate (ns)" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-TIMEUTC  (0x01 0x21)  —  20 byte  —  UTC Time Solution
+  // Tam UTC zaman çözünürlüğü + doğruluk
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_TIMEUTC: {
+    requires: null,
+    label: "UTC Time Solution",
+    description: "UTC date and time breakdown with sub-second accuracy estimate. Includes UTC standard identifier.",
+    binary: {
+      tag:             "UBX-NAV-TIMEUTC",
+      id:              289,            // 0x0121
+      ubx_class:       1,
+      ubx_id:          33,
+      cfg_key_uart1:   0x2091005c,    // CFG-MSGOUT-UBX_NAV_TIMEUTC_UART1
+      default_rate_hz: 1,
+      payload_length:  20,
+      fields: [
+        { name: "iTOW",  type: "uint32", unit: "ms",    note: "GPS time of week (ms)" },
+        { name: "tAcc",  type: "uint32", unit: "ns",    note: "Time accuracy estimate (ns)" },
+        { name: "nano",  type: "int32",  unit: "ns",    note: "Fraction of second, -1e9..1e9 (ns)" },
+        { name: "year",  type: "uint16", unit: "",      note: "Year (UTC), range 1999..2099" },
+        { name: "month", type: "uint8",  unit: "",      note: "Month (UTC), range 1..12" },
+        { name: "day",   type: "uint8",  unit: "",      note: "Day (UTC), range 1..31" },
+        { name: "hour",  type: "uint8",  unit: "",      note: "Hour (UTC), range 0..23" },
+        { name: "min",   type: "uint8",  unit: "",      note: "Minute (UTC), range 0..59" },
+        { name: "sec",   type: "uint8",  unit: "",      note: "Second (UTC), range 0..60" },
+        { name: "valid", type: "uint8",  unit: "",      note: "bit0=validTOW bit1=validWKN bit2=validUTC bit3=authStatus bit4-7=utcStandard" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-CLOCK  (0x01 0x22)  —  20 byte  —  Clock Solution
+  // Alıcının saat kayması ve sürükü
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_CLOCK: {
+    requires: null,
+    label: "Clock Solution",
+    description: "Receiver clock bias, drift and accuracy estimates. Useful for monitoring clock performance.",
+    binary: {
+      tag:             "UBX-NAV-CLOCK",
+      id:              290,            // 0x0122
+      ubx_class:       1,
+      ubx_id:          34,
+      cfg_key_uart1:   0x20910066,    // CFG-MSGOUT-UBX_NAV_CLOCK_UART1
+      default_rate_hz: 1,
+      payload_length:  20,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms",   note: "GPS time of week (ms)" },
+        { name: "clkB", type: "int32",  unit: "ns",   note: "Clock bias — receiver clock offset from GPS time (ns)" },
+        { name: "clkD", type: "int32",  unit: "ns/s", note: "Clock drift — receiver clock frequency offset (ns/s)" },
+        { name: "tAcc", type: "uint32", unit: "ns",   note: "Time accuracy estimate (ns)" },
+        { name: "fAcc", type: "uint32", unit: "ps/s", note: "Frequency accuracy estimate (ps/s)" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-RELPOSNED  (0x01 0x3C)  —  64 byte  —  Relative Positioning NED
+  // RTK baz istasyonuna göre rölatif konum vektörü (kuzey/doğu/aşağı)
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_RELPOSNED: {
+    requires: null,
+    label: "Relative Positioning NED (RTK)",
+    description: "Relative position vector from rover to base in NED frame. RTK fix status, heading and accuracy estimates.",
+    binary: {
+      tag:             "UBX-NAV-RELPOSNED",
+      id:              316,            // 0x013C
+      ubx_class:       1,
+      ubx_id:          60,
+      cfg_key_uart1:   0x2091008c,    // CFG-MSGOUT-UBX_NAV_RELPOSNED_UART1
+      default_rate_hz: 1,
+      payload_length:  64,
+      fields: [
+        { name: "version",       type: "uint8",  unit: "",    note: "Message version (1)" },
+        { name: "_res0",         type: "uint8",  unit: "",    note: "Reserved" },
+        { name: "refStationId",  type: "uint16", unit: "",    note: "Reference station ID" },
+        { name: "iTOW",          type: "uint32", unit: "ms",  note: "GPS time of week (ms)" },
+        { name: "relPosN",       type: "int32",  unit: "m",   note: "North component (cm → m)", scale: 0.01 },
+        { name: "relPosE",       type: "int32",  unit: "m",   note: "East component (cm → m)",  scale: 0.01 },
+        { name: "relPosD",       type: "int32",  unit: "m",   note: "Down component (cm → m)",  scale: 0.01 },
+        { name: "relPosLength",  type: "int32",  unit: "m",   note: "Length of relative position vector (cm → m)", scale: 0.01 },
+        { name: "relPosHeading", type: "int32",  unit: "deg", note: "Heading of relative position (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "_res1",         type: "uint32", unit: "",    note: "Reserved" },
+        { name: "relPosHPN",     type: "int8",   unit: "m",   note: "High precision north (0.1mm → m)", scale: 0.0001 },
+        { name: "relPosHPE",     type: "int8",   unit: "m",   note: "High precision east (0.1mm → m)",  scale: 0.0001 },
+        { name: "relPosHPD",     type: "int8",   unit: "m",   note: "High precision down (0.1mm → m)",  scale: 0.0001 },
+        { name: "relPosHPLen",   type: "int8",   unit: "m",   note: "High precision length (0.1mm → m)", scale: 0.0001 },
+        { name: "accN",          type: "uint32", unit: "m",   note: "Accuracy of north component (0.1mm → m)", scale: 0.0001 },
+        { name: "accE",          type: "uint32", unit: "m",   note: "Accuracy of east component (0.1mm → m)",  scale: 0.0001 },
+        { name: "accD",          type: "uint32", unit: "m",   note: "Accuracy of down component (0.1mm → m)",  scale: 0.0001 },
+        { name: "accLength",     type: "uint32", unit: "m",   note: "Accuracy of length (0.1mm → m)", scale: 0.0001 },
+        { name: "accHeading",    type: "uint32", unit: "deg", note: "Accuracy of heading (1e-5 deg → deg)", scale: 1e-5 },
+        { name: "_res2",         type: "uint32", unit: "",    note: "Reserved" },
+        { name: "flags",         type: "uint32", unit: "",    note: "bit0=gnssFixOK bit1=diffSoln bit2=relPosValid bit3-4=carrSoln bit5=isMoving bit8=relPosHeadingValid" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-COV  (0x01 0x36)  —  64 byte  —  Covariance Matrices
+  // Konum ve hız için 3x3 üst üçgen kovaryans matrisi (NED çerçevesi)
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_COV: {
+    requires: null,
+    label: "Covariance Matrices",
+    description: "Upper triangular NED covariance matrices for position (m²) and velocity (m²/s²). 6 independent elements each.",
+    binary: {
+      tag:             "UBX-NAV-COV",
+      id:              310,            // 0x0136
+      ubx_class:       1,
+      ubx_id:          54,
+      cfg_key_uart1:   0x20910084,    // CFG-MSGOUT-UBX_NAV_COV_UART1
+      default_rate_hz: 1,
+      payload_length:  64,
+      fields: [
+        { name: "iTOW",       type: "uint32",  unit: "ms",      note: "GPS time of week (ms)" },
+        { name: "version",    type: "uint8",   unit: "",        note: "Message version" },
+        { name: "posCovValid",type: "uint8",   unit: "",        note: "1=position covariance matrix valid" },
+        { name: "velCovValid",type: "uint8",   unit: "",        note: "1=velocity covariance matrix valid" },
+        { name: "_res0",      type: "uint8",   unit: "",        note: "Reserved" },
+        { name: "_res1",      type: "uint32",  unit: "",        note: "Reserved" },
+        { name: "_res2",      type: "uint32",  unit: "",        note: "Reserved" },
+        { name: "posCovNN",   type: "float32", unit: "m²",      note: "Position covariance North-North" },
+        { name: "posCovNE",   type: "float32", unit: "m²",      note: "Position covariance North-East" },
+        { name: "posCovND",   type: "float32", unit: "m²",      note: "Position covariance North-Down" },
+        { name: "posCovEE",   type: "float32", unit: "m²",      note: "Position covariance East-East" },
+        { name: "posCovED",   type: "float32", unit: "m²",      note: "Position covariance East-Down" },
+        { name: "posCovDD",   type: "float32", unit: "m²",      note: "Position covariance Down-Down" },
+        { name: "velCovNN",   type: "float32", unit: "m²/s²",   note: "Velocity covariance North-North" },
+        { name: "velCovNE",   type: "float32", unit: "m²/s²",   note: "Velocity covariance North-East" },
+        { name: "velCovND",   type: "float32", unit: "m²/s²",   note: "Velocity covariance North-Down" },
+        { name: "velCovEE",   type: "float32", unit: "m²/s²",   note: "Velocity covariance East-East" },
+        { name: "velCovED",   type: "float32", unit: "m²/s²",   note: "Velocity covariance East-Down" },
+        { name: "velCovDD",   type: "float32", unit: "m²/s²",   note: "Velocity covariance Down-Down" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-SVIN  (0x01 0x3B)  —  40 byte  —  Survey-in Data
+  // Base station survey-in durumu (Fixed Mode için)
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_SVIN: {
+    requires: null,
+    label: "Survey-in Data",
+    description: "Survey-in progress and result. Shows mean position convergence and observation count. Used when operating as RTK base station.",
+    binary: {
+      tag:             "UBX-NAV-SVIN",
+      id:              315,            // 0x013B
+      ubx_class:       1,
+      ubx_id:          59,
+      cfg_key_uart1:   0x20910089,    // CFG-MSGOUT-UBX_NAV_SVIN_UART1
+      default_rate_hz: 1,
+      payload_length:  40,
+      fields: [
+        { name: "version",       type: "uint8",  unit: "",     note: "Message version (0x00)" },
+        { name: "_res0",         type: "uint8",  unit: "",     note: "Reserved" },
+        { name: "_res1",         type: "uint16", unit: "",     note: "Reserved" },
+        { name: "iTOW",          type: "uint32", unit: "ms",   note: "GPS time of week (ms)" },
+        { name: "dur",           type: "uint32", unit: "s",    note: "Passed survey-in observation time (s)" },
+        { name: "meanX",         type: "int32",  unit: "cm",   note: "Current mean ECEF X coordinate (cm)" },
+        { name: "meanY",         type: "int32",  unit: "cm",   note: "Current mean ECEF Y coordinate (cm)" },
+        { name: "meanZ",         type: "int32",  unit: "cm",   note: "Current mean ECEF Z coordinate (cm)" },
+        { name: "meanXHP",       type: "int8",   unit: "mm",   note: "HP mean ECEF X (0.1mm); add to meanX*10", scale: 0.1 },
+        { name: "meanYHP",       type: "int8",   unit: "mm",   note: "HP mean ECEF Y (0.1mm); add to meanY*10", scale: 0.1 },
+        { name: "meanZHP",       type: "int8",   unit: "mm",   note: "HP mean ECEF Z (0.1mm); add to meanZ*10", scale: 0.1 },
+        { name: "_res2",         type: "uint8",  unit: "",     note: "Reserved" },
+        { name: "meanAcc",       type: "uint32", unit: "m",    note: "Current mean position accuracy (0.1mm → m)", scale: 0.0001 },
+        { name: "obs",           type: "uint32", unit: "",     note: "Number of position observations used" },
+        { name: "valid",         type: "uint8",  unit: "",     note: "1=survey-in position is valid" },
+        { name: "active",        type: "uint8",  unit: "",     note: "1=survey-in in progress" },
+        { name: "_res3",         type: "uint16", unit: "",     note: "Reserved" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-EOE  (0x01 0x61)  —  4 byte  —  End of Epoch
+  // Her epoch sonunda tüm NAV mesajları tamamlandıktan sonra gelir.
+  // Senkronizasyon işareti olarak kullanılır.
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_EOE: {
+    requires: null,
+    label: "End of Epoch",
+    description: "Marks end of navigation epoch. Sent after all periodic NAV and NMEA messages for the same epoch. Use for synchronization.",
+    binary: {
+      tag:             "UBX-NAV-EOE",
+      id:              353,            // 0x0161
+      ubx_class:       1,
+      ubx_id:          97,
+      cfg_key_uart1:   0x20910160,    // CFG-MSGOUT-UBX_NAV_EOE_UART1
+      default_rate_hz: 1,
+      payload_length:  4,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week of the navigation epoch (ms)" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-SAT  (0x01 0x35)  —  variable length  —  Satellite Information
+  // Header 8B + numSvs × 12B per satellite
+  // binary-parser.js'de _parseUbxNavSat() ile işlenir
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_SAT: {
+    requires: null,
+    label: "Satellite Information",
+    description: "Per-satellite info: signal strength, elevation, azimuth, constellation (GPS/GLONASS/Galileo/BeiDou/QZSS/SBAS) and health flags.",
+    binary: {
+      tag:             "UBX-NAV-SAT",
+      id:              309,            // 0x0135
+      ubx_class:       1,
+      ubx_id:          53,
+      cfg_key_uart1:   0x20910015,    // CFG-MSGOUT-UBX_NAV_SAT_UART1
+      default_rate_hz: 1,
+      payload_length:  null,          // variable: 8 + numSvs*12
+      special_parser:  true,          // binary-parser.js: _parseUbxNavSat()
+      // Header (8 bytes):
+      //   iTOW     U4  GPS time of week ms
+      //   version  U1  Message version
+      //   numSvs   U1  Number of satellites in block
+      //   reserved U2  Reserved
+      // Per satellite block (12 bytes):
+      //   gnssId   U1  0=GPS 1=SBAS 2=Galileo 3=BeiDou 4=IMES 5=QZSS 6=GLONASS
+      //   svId     U1  Satellite identifier within GNSS system
+      //   cno      U1  Carrier-to-noise density ratio (dBHz)
+      //   elev     I1  Elevation (deg), -90..90
+      //   azim     I2  Azimuth (deg), 0..359
+      //   prRes    I2  Pseudo-range residual (0.1m)
+      //   flags    X4  bit0-2=qualityInd bit3=svUsed bit4-5=health bit6=diffCorr
+      fields: []
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // NAV-SIG  (0x01 0x43)  —  variable length  —  Signal Information
+  // Uydu başına değil sinyal başına bilgi (GPS L1/L2, GLONASS L1/L2 ayrı ayrı)
+  // binary-parser.js'de _parseUbxNavSig() ile işlenir
+  // ────────────────────────────────────────────────────────────────
+  UBX_NAV_SIG: {
+    requires: null,
+    label: "Signal Information",
+    description: "Per-signal tracking info including individual C/N0, pseudorange residuals and correction status. Differentiates L1/L2/L5 signals per satellite.",
+    binary: {
+      tag:             "UBX-NAV-SIG",
+      id:              323,            // 0x0143
+      ubx_class:       1,
+      ubx_id:          67,
+      cfg_key_uart1:   0x20910346,    // CFG-MSGOUT-UBX_NAV_SIG_UART1
+      default_rate_hz: 1,
+      payload_length:  null,          // variable: 8 + numSigs*16
+      special_parser:  true,          // binary-parser.js: _parseUbxNavSig()
+      // Header (8 bytes):
+      //   iTOW     U4  GPS time of week ms
+      //   version  U1  Message version (0x00)
+      //   numSigs  U1  Number of signals in block
+      //   reserved U2  Reserved
+      // Per signal block (16 bytes):
+      //   gnssId   U1  GNSS identifier
+      //   svId     U1  Satellite identifier
+      //   sigId    U1  Signal identifier (0=GPS-L1CA, 3=GPS-L2CL, 4=GPS-L2CM, ...)
+      //   freqId   U1  GLONASS frequency channel (255 for non-GLONASS)
+      //   prRes    I2  Pseudo-range residual (0.1m)
+      //   cno      U1  Carrier-to-noise density (dBHz)
+      //   qualInd  U1  Signal quality indicator
+      //   corrSrc  U1  Correction source (0=no, 1=SBAS, 2=BeiDou, 3=IMES, 4=QZSS, 5=RTCM2, 6=RTCM3)
+      //   ionoModel U1 Ionospheric model used
+      //   sigFlags X2  bit0=health bit1=prSmoothed bit2=prUsed bit3=crUsed bit4=doUsed ...
+      //   reserved U4  Reserved
+      fields: []
+    }
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // MON CLASS  (ubx_class = 0x0A = 10)
+  // ════════════════════════════════════════════════════════════════
+
+  // ────────────────────────────────────────────────────────────────
+  // MON-RF  (0x0A 0x38)  —  variable length  —  RF Band Information
+  // RF jammer/spoofing tespiti + anten sağlığı — BYNAV'da yok
+  // binary-parser.js'de _parseUbxMonRf() ile işlenir
+  // ────────────────────────────────────────────────────────────────
+  UBX_MON_RF: {
+    requires: "rf_monitor",           // Ublox'a özgü capability
+    label: "RF Band Monitor",
+    description: "RF signal quality, jamming indicator and antenna health per frequency band. Enables interference and spoofing detection.",
+    binary: {
+      tag:             "UBX-MON-RF",
+      id:              2616,           // 0x0A38
+      ubx_class:       10,             // MON
+      ubx_id:          56,
+      cfg_key_uart1:   0x20910092,    // CFG-MSGOUT-UBX_MON_RF_UART1
+      default_rate_hz: 1,
+      payload_length:  null,          // variable: 4 + nBlocks*24
+      special_parser:  true,          // binary-parser.js: _parseUbxMonRf()
+      // Header (4 bytes):
+      //   version  U1  Message version
+      //   nBlocks  U1  Number of RF blocks (typically 2: L1 and L2)
+      //   reserved U2  Reserved
+      // Per block (24 bytes):
+      //   blockId    U1  0=L1 band, 1=L2 band
+      //   flags      X1  bit0-1=jammingState(0=unknown 1=ok 2=warning 3=critical)
+      //   antStatus  U1  0=init 1=dontknow 2=ok 3=short 4=open
+      //   antPower   U1  0=off 1=on 2=dontknow
+      //   postStatus U4  POST status word
+      //   reserved   U4  Reserved
+      //   noisePerMS U2  Noise level
+      //   agcCnt     U2  AGC monitor (0=min..8191=max)
+      //   jamInd     U1  CW jamming indicator (0=no..255=strong)
+      //   ofsI       I1  Imbalance of I-part (signed, normalized)
+      //   magI       U1  Magnitude of I-part
+      //   ofsQ       I1  Imbalance of Q-part (signed, normalized)
+      //   magQ       U1  Magnitude of Q-part
+      //   reserved2  U1[3]  Reserved
+      fields: []
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // MON-SYS  (0x0A 0x39)  —  24 byte  —  Current System Performance
+  // CPU ve bellek kullanımı, çalışma süresi, uyarı/hata sayaçları
+  // ────────────────────────────────────────────────────────────────
+  UBX_MON_SYS: {
+    requires: "rf_monitor",           // Ublox'a özgü; tüm F9/X20 modellerinde mevcut
+    label: "System Performance",
+    description: "Real-time CPU load, memory usage, IO bandwidth and receiver uptime. Also shows warning and error counts since startup.",
+    binary: {
+      tag:             "UBX-MON-SYS",
+      id:              2617,           // 0x0A39
+      ubx_class:       10,
+      ubx_id:          57,
+      cfg_key_uart1:   0x2091069e,    // CFG-MSGOUT-UBX_MON_SYS_UART1
+      default_rate_hz: 1,
+      payload_length:  24,
+      fields: [
+        { name: "msgVer",      type: "uint8", unit: "",    note: "Message version (0x01)" },
+        { name: "bootType",    type: "uint8", unit: "",    note: "Boot type: 0=unknown 1=cold 2=watchdog 3=HW reset 4=HW backup 5=SW backup 6=SW reset" },
+        { name: "cpuLoad",     type: "uint8", unit: "%",   note: "Highest real-time task CPU load (%)" },
+        { name: "cpuLoadMax",  type: "uint8", unit: "%",   note: "Max CPU load since startup (%)" },
+        { name: "memUsage",    type: "uint8", unit: "%",   note: "Highest dynamic memory usage (%)" },
+        { name: "memUsageMax", type: "uint8", unit: "%",   note: "Max memory usage since startup (%)" },
+        { name: "ioUsage",     type: "uint8", unit: "%",   note: "Highest IO bandwidth usage (%)" },
+        { name: "ioUsageMax",  type: "uint8", unit: "%",   note: "Max IO bandwidth since startup (%)" },
+        { name: "runTime",     type: "uint32",unit: "s",   note: "Seconds since last startup" },
+        { name: "noticeCount", type: "uint16",unit: "",    note: "Notice messages since startup" },
+        { name: "warnCount",   type: "uint16",unit: "",    note: "Warning messages since startup" },
+        { name: "errorCount",  type: "uint16",unit: "",    note: "Error messages since startup" },
+        { name: "tempValue",   type: "int8",  unit: "°C",  note: "Receiver temperature (+/- 2 degC accuracy)" },
+        { name: "_res0",       type: "uint8", unit: "",    note: "Reserved" },
+        { name: "_res1",       type: "uint32",unit: "",    note: "Reserved" }
+      ]
+    }
+  },
+
+  // ────────────────────────────────────────────────────────────────
+  // MON-VER  (0x0A 0x04)  —  variable length  —  Receiver/Software Version
+  // Cihaz tespiti için kullanılır (device-query.js), doğrudan dashboard'a beslenmez.
+  // Poll: boş payload gönder → cihaz cevap verir
+  // ────────────────────────────────────────────────────────────────
+  UBX_MON_VER: {
+    requires: null,
+    label: "Receiver Version",
+    description: "Firmware version, hardware version and supported GNSS systems. Used for device detection and capability identification.",
+    binary: {
+      tag:            "UBX-MON-VER",
+      id:             2564,            // 0x0A04
+      ubx_class:      10,              // MON
+      ubx_id:         4,
+      cfg_key_uart1:  null,            // poll-only, no periodic output key
+      default_rate_hz: 0,             // poll-only, not a periodic message
+      payload_length: null,           // variable: 40 + N*30
+      special_parser: true,           // device-query.js + binary-parser.js: _parseUbxMonVer()
+      // Response structure:
+      //   swVersion  CH[30]  e.g. "EXT CORE 1.00 (f10c36)"
+      //   hwVersion  CH[10]  e.g. "00190000"
+      //   extension  CH[30] × N:
+      //     "FWVER=HPG 1.32"       → firmware version
+      //     "PROTVER=27.31"        → protocol version
+      //     "MOD=ZED-F9P"          → module model
+      //     "GNSS=GPS GLO GAL BDS" → supported constellations
+      fields: []
+    }
+  }
+}

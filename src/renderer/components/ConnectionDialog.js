@@ -2,7 +2,6 @@ class ConnectionDialog {
     constructor(api) {
         this.api = api;
         this.isConnected = false;
-        this._awaitingCaps = false;  // connection confirmed, waiting for AUTHORIZATION result
 
         // UI Elements - Updated for title bar button
         this.connectBtn = document.getElementById('btn-connect-titlebar');
@@ -66,34 +65,9 @@ class ConnectionDialog {
             if (iconConn) iconConn.style.display = connected ? 'block' : 'none';
             if (iconDisc) iconDisc.style.display = connected ? 'none' : 'block';
 
-            if (connected) {
-                // Keep dialog open — wait for device identification
-                this._awaitingCaps = true;
-                this._setIdentifyingState(true);
-            } else {
-                this._awaitingCaps = false;
-                this._setIdentifyingState(false);
-            }
+            // Close dialog immediately on connect — caps will be applied asynchronously
+            if (connected) this.hide();
         });
-
-        // Close dialog once device capabilities arrive
-        this.api.onDeviceCapabilities((caps) => {
-            this._setIdentifyingState(false);
-            if (this._awaitingCaps) {
-                this._awaitingCaps = false;
-                this.hide();
-            }
-        });
-    }
-
-    _setIdentifyingState(active) {
-        const statusEl = document.getElementById('conn-identify-status');
-        const doConnBtn = document.getElementById('btn-do-connect');
-        const cancelBtn = document.getElementById('btn-cancel-connect');
-
-        if (statusEl) statusEl.style.display = active ? 'flex' : 'none';
-        if (doConnBtn) doConnBtn.disabled = active;
-        if (cancelBtn) cancelBtn.disabled = active;
     }
 
     show() {
@@ -153,4 +127,5 @@ class ConnectionDialog {
 }
 
 // End ConnectionDialog class
+
 

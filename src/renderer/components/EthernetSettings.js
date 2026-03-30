@@ -12,6 +12,7 @@ class EthernetSettings {
     this._loaded = false;
     this._termUnsub = null;
     this._firstActivation = false;
+    this._deviceCaps = null;  // Set by app.js via applyCapabilities()
 
     // Device-pulled state
     this._deviceIpRows = [];
@@ -191,7 +192,16 @@ class EthernetSettings {
 
   // --- Device Status Pull ---
 
+  applyCapabilities(caps) {
+    this._deviceCaps = caps;
+  }
+
   async _pullCurrentStatus() {
+    // u-blox devices do not have Ethernet / ICOM ports — skip BYNAV queries.
+    if (this._deviceCaps?.family === 'ublox') {
+      this._setStatus('u-blox mode — Ethernet/ICOM not available', 'warning');
+      return;
+    }
     this._listenActive = true;
     this._listenBuffer = [];
     this._setStatus('Pulling device status...');

@@ -7,6 +7,7 @@ const SCHEMA_DIR = path.join(__dirname, '..', 'shared', 'schemas');
 // Caches
 let _logSchema = null;
 let _nmeaSchema = null;
+let _ubxSchema = null;
 let _displayConfig = null;
 let _refTables = null;
 let _asciiMap = null;
@@ -41,12 +42,14 @@ function parseJson5(text) {
   // Remove trailing commas
   content = content.replace(/,(\s*[}\]])/g, '$1');
 
+  // Convert hex literals to decimal for JSON.parse()
+  content = content.replace(/\b0x([0-9A-Fa-f]+)\b/g, (_, hex) => parseInt(hex, 16));
+
   // Quote unquoted keys
   let result = '';
   let i = 0;
   while (i < content.length) {
     if (content[i] === '"') {
-      // Skip string
       result += content[i++];
       while (i < content.length) {
         result += content[i];
@@ -90,7 +93,7 @@ function loadSchemaFile(filename) {
   }
 }
 
-// SWEGEO device message schema (SS100D, SS100D-INS — unified ASCII + Binary)
+// SWEGEO device message schema (SS100D, SS100D-INS)
 function getLogSchema() {
   if (!_logSchema) {
     _logSchema = loadSchemaFile('swegeo_messages.json5');
@@ -108,11 +111,20 @@ function getNmeaSchema() {
   return _nmeaSchema;
 }
 
+// UBX F9P phase-1 schema
+function getUbxSchema() {
+  if (!_ubxSchema) {
+    _ubxSchema = loadSchemaFile('ubx_f9p_messages.json5');
+    console.log(`[SchemaLoader] Loaded UBX schema: ${Object.keys(_ubxSchema).length} entries`);
+  }
+  return _ubxSchema;
+}
+
 // Display config
 function getDisplayConfig() {
   if (!_displayConfig) {
     _displayConfig = loadSchemaFile('display_config.json5');
-    console.log(`[SchemaLoader] Loaded display config`);
+    console.log('[SchemaLoader] Loaded display config');
   }
   return _displayConfig;
 }
@@ -130,17 +142,12 @@ function getReferenceTable(key) {
   return tables[key] || null;
 }
 
-/**
- * Lookup a numeric value in a reference table and return the ASCII label.
- * e.g. lookupRefValue("table_4_1_solution_status", 0) → "SOL_COMPUTED"
- */
 function lookupRefValue(tableKey, numericValue) {
   const table = getReferenceTable(tableKey);
   if (!table || !table.rows) return null;
   const strVal = String(numericValue);
   for (const row of table.rows) {
     if (String(row.value) === strVal) return row.ascii || null;
-    // Handle ranges like "10-12"
     if (row.value && row.value.includes('-')) {
       const [lo, hi] = row.value.split('-').map(Number);
       const num = Number(numericValue);
@@ -176,6 +183,8 @@ function getAsciiMessageMap() {
 function getBinaryMessageMap() {
   if (!_binaryMap) {
     _binaryMap = {};
+
+    // BYNAV / SWEGEO messages
     const schema = getLogSchema();
     for (const [key, entry] of Object.entries(schema)) {
       if (key.startsWith('_') || typeof entry !== 'object') continue;
@@ -188,6 +197,23 @@ function getBinaryMessageMap() {
       normalized._family = key;
       normalized._label = entry.label || key;
       normalized._description = normalized.description || entry.description || '';
+      _binaryMap[tag] = normalized;
+    }
+
+    // UBX messages
+    const ubxSchema = getUbxSchema();
+    for (const [key, entry] of Object.entries(ubxSchema)) {
+      if (key.startsWith('_') || typeof entry !== 'object') continue;
+      const binaryDef = entry.binary;
+      if (!binaryDef) continue;
+      const normalized = { ...binaryDef };
+      const tag = (normalized.tag || key).toUpperCase();
+      normalized.name = normalized.name || tag;
+      normalized.aliases = normalized.aliases || [];
+      normalized._family = key;
+      normalized._label = entry.label || key;
+      normalized._description = normalized.description || entry.description || '';
+      normalized._ubx = true;
       _binaryMap[tag] = normalized;
     }
   }
@@ -222,17 +248,120 @@ function getExtraFields(capability, sourceName) {
   return source ? (source.extra_fields || []) : [];
 }
 
+function _toUpperSafe(value) {
+  return String(value || '').toUpperCase();
+}
+
+function getF9pNmeaConfigMap() {
+  const map = {};
+  const ubx = getUbxSchema();
+  for (const [key, entry] of Object.entries(ubx)) {
+    if (key.startsWith('_') || typeof entry !== 'object' || !entry.nmea) continue;
+    const tag = _toUpperSafe(entry.nmea.tag || key.replace(/^NMEA_/, ''));
+    if (tag) map[tag] = entry.nmea;
+  }
+  return map;
+}
+
+function getUbxCfgKeysBySource(sourceName) {
+  const sourceUpper = _toUpperSafe(sourceName);
+  const ubx = getUbxSchema();
+  for (const [key, entry] of Object.entries(ubx)) {
+    if (key.startsWith('_') || typeof entry !== 'object' || !entry.binary) continue;
+    const keyUpper = _toUpperSafe(key);
+    const tagUpper = _toUpperSafe(entry.binary.tag);
+    if (sourceUpper === keyUpper || sourceUpper === tagUpper) {
+      return entry.binary.cfg_keys || null;
+    }
+  }
+  return null;
+}
+
+// Resolve "requires" flag for a display source.
+function inferSourceRequires(sourceName, sourceConfig, msgType) {
+  if (sourceConfig && Object.prototype.hasOwnProperty.call(sourceConfig, 'requires')) {
+    return sourceConfig.requires ?? null;
+  }
+
+  const sourceUpper = _toUpperSafe(sourceName);
+  const tagUpper = _toUpperSafe(sourceConfig?.tag);
+
+  if (msgType === 'ubx') {
+    const ubx = getUbxSchema();
+    const byKey = ubx[sourceName];
+    if (byKey && typeof byKey === 'object') return byKey.requires ?? null;
+
+    for (const [key, entry] of Object.entries(ubx)) {
+      if (key.startsWith('_') || typeof entry !== 'object') continue;
+      const keyUpper = _toUpperSafe(key);
+      const binaryTagUpper = _toUpperSafe(entry.binary?.tag);
+      if (
+        sourceUpper === keyUpper ||
+        sourceUpper === binaryTagUpper ||
+        (tagUpper && (tagUpper === keyUpper || tagUpper === binaryTagUpper))
+      ) {
+        return entry.requires ?? null;
+      }
+    }
+    return null;
+  }
+
+  if (msgType === 'ascii' || msgType === 'binary') {
+    const log = getLogSchema();
+    for (const [key, entry] of Object.entries(log)) {
+      if (key.startsWith('_') || typeof entry !== 'object') continue;
+      const keyUpper = _toUpperSafe(key);
+      const asciiTagUpper = _toUpperSafe(entry.ascii?.tag);
+      const binaryTagUpper = _toUpperSafe(entry.binary?.tag);
+      if (
+        sourceUpper === keyUpper ||
+        sourceUpper === asciiTagUpper ||
+        sourceUpper === binaryTagUpper ||
+        (tagUpper && (
+          tagUpper === keyUpper ||
+          tagUpper === asciiTagUpper ||
+          tagUpper === binaryTagUpper
+        ))
+      ) {
+        return entry.requires ?? null;
+      }
+    }
+  }
+
+  return null;
+}
+
 function getMessagesForCapability(capability) {
   const sources = getCapabilitySources(capability);
   const messages = [];
+  const f9pNmea = getF9pNmeaConfigMap();
+
   for (const [sourceName, sourceConfig] of Object.entries(sources)) {
     const msgType = sourceConfig.type || 'binary';
+
+    let device_family = null;
+    if (msgType === 'ascii' || msgType === 'binary') device_family = 'bynav';
+    else if (msgType === 'ubx') device_family = 'ublox';
+
+    let cfgKeys = null;
+    if (msgType === 'ubx') {
+      cfgKeys = getUbxCfgKeysBySource(sourceName);
+    } else if (msgType === 'nmea') {
+      const nmeaTag = _toUpperSafe(sourceConfig.id || sourceName);
+      cfgKeys = f9pNmea[nmeaTag]?.cfg_keys || null;
+    }
+
     const entry = {
       name: sourceName,
       type: msgType,
       description: sourceConfig.description || '',
-      log_command: sourceConfig.log_command || null
+      log_command: sourceConfig.log_command || null,
+      requires: inferSourceRequires(sourceName, sourceConfig, msgType),
+      device_family,
+      cfg_keys: cfgKeys,
+      cfg_key_uart1: cfgKeys?.uart1 ?? (sourceConfig.cfg_key_uart1 != null ? sourceConfig.cfg_key_uart1 : null)
     };
+
     if (msgType === 'ascii') {
       entry.tag = sourceConfig.tag || sourceName;
       entry.id = entry.tag;
@@ -241,6 +370,7 @@ function getMessagesForCapability(capability) {
     }
     messages.push(entry);
   }
+
   return messages;
 }
 
@@ -259,12 +389,15 @@ function applyConversions(values, conversions) {
 // Get all message definitions for the Messages Settings table
 function getAllMessageDefinitions() {
   const results = [];
+  const f9pNmea = getF9pNmeaConfigMap();
 
   // NMEA messages (nmea0183.json5)
   const nmea = getNmeaSchema();
   for (const [key, entry] of Object.entries(nmea)) {
     if (key.startsWith('_') || typeof entry !== 'object') continue;
     const ascii = entry.ascii || entry;
+    const cfgKeys = f9pNmea[_toUpperSafe(ascii.tag || key)]?.cfg_keys || null;
+
     results.push({
       name: ascii.tag || key,
       familyKey: key,
@@ -273,16 +406,20 @@ function getAllMessageDefinitions() {
       category: 'nmea',
       variant: 'nmea',
       defaultHz: ascii.default_rate_hz || 1,
-      isOnnew: false
+      isOnnew: false,
+      device_family: null,
+      supportedOnUblox: !!cfgKeys,
+      cfgKeys,
+      cfgKeyUart1: cfgKeys?.uart1 || null
     });
   }
 
-  // SWEGEO device messages (swegeo_messages.json5)
+  // SWEGEO device messages (BYNAV ASCII + Binary)
   const log = getLogSchema();
   for (const [key, entry] of Object.entries(log)) {
     if (key.startsWith('_') || typeof entry !== 'object') continue;
-    // requires: null = her cihazda, "ins" = sadece INS'li, "dual_ant" = dual anten gerekli
     const requires = entry.requires || null;
+
     if (entry.ascii) {
       const v = entry.ascii;
       results.push({
@@ -294,9 +431,14 @@ function getAllMessageDefinitions() {
         variant: 'ascii',
         defaultHz: v.default_rate_hz || 1,
         isOnnew: !!v.on_new,
-        requires
+        requires,
+        device_family: 'bynav',
+        supportedOnUblox: false,
+        cfgKeys: null,
+        cfgKeyUart1: null
       });
     }
+
     if (entry.binary) {
       const v = entry.binary;
       results.push({
@@ -308,10 +450,43 @@ function getAllMessageDefinitions() {
         variant: 'binary',
         defaultHz: v.default_rate_hz || 1,
         isOnnew: !!v.on_new,
-        requires
+        requires,
+        device_family: 'bynav',
+        supportedOnUblox: false,
+        cfgKeys: null,
+        cfgKeyUart1: null
       });
     }
   }
+
+  // UBX messages (u-blox)
+  const ubxSchema = getUbxSchema();
+  for (const [key, entry] of Object.entries(ubxSchema)) {
+    if (key.startsWith('_') || typeof entry !== 'object') continue;
+    const requires = entry.requires || null;
+    if (!entry.binary) continue;
+
+    const v = entry.binary;
+    const cfgKeys = v.cfg_keys || null;
+
+    results.push({
+      name: (v.tag || key).toUpperCase(),
+      familyKey: key,
+      command: null,
+      description: v.description || entry.description || entry.label || '',
+      category: 'ubx',
+      variant: 'binary',
+      defaultHz: v.default_rate_hz || 1,
+      isOnnew: false,
+      requires,
+      device_family: 'ublox',
+      supportedOnUblox: true,
+      cfgKeys,
+      cfgKeyUart1: cfgKeys?.uart1 || null,
+      specialParser: !!v.special_parser
+    });
+  }
+
   return results;
 }
 
@@ -329,6 +504,20 @@ function getMessageSchema(familyKey, variant) {
       notes: def.notes || null
     };
   }
+
+  const ubx = getUbxSchema();
+  const ubxEntry = ubx[familyKey];
+  if (ubxEntry && ubxEntry.binary) {
+    const def = ubxEntry.binary;
+    return {
+      name: def.tag || familyKey,
+      description: def.description || ubxEntry.description || ubxEntry.label || '',
+      fields: def.fields || [],
+      derived: def.derived || [],
+      notes: def.notes || null
+    };
+  }
+
   const log = getLogSchema();
   const entry = log[familyKey];
   if (!entry) return null;
@@ -348,10 +537,18 @@ function formatValue(value, formatType, decimals = 2, unit = '') {
   try {
     let result;
     switch (formatType) {
-      case 'int': result = String(Math.round(Number(value))); break;
-      case 'float': case 'coord': result = Number(value).toFixed(decimals); break;
-      case 'sigma': result = `±${Number(value).toFixed(decimals)}`; break;
-      default: result = String(value);
+      case 'int':
+        result = String(Math.round(Number(value)));
+        break;
+      case 'float':
+      case 'coord':
+        result = Number(value).toFixed(decimals);
+        break;
+      case 'sigma':
+        result = `�${Number(value).toFixed(decimals)}`;
+        break;
+      default:
+        result = String(value);
     }
     return unit ? `${result} ${unit}` : result;
   } catch {
@@ -359,10 +556,28 @@ function formatValue(value, formatType, decimals = 2, unit = '') {
   }
 }
 
+// Return all UBX/NMEA messages that have F9P cfg keys.
+function getAllUbxCfgKeys() {
+  const defs = getAllMessageDefinitions();
+  const results = [];
+  for (const msg of defs) {
+    if (!msg.cfgKeys) continue;
+    if (msg.category !== 'ubx' && msg.category !== 'nmea') continue;
+    results.push({
+      name: msg.name,
+      familyKey: msg.familyKey,
+      category: msg.category,
+      cfg_keys: msg.cfgKeys
+    });
+  }
+  return results;
+}
+
 module.exports = {
   parseJson5,
   getLogSchema,
   getNmeaSchema,
+  getUbxSchema,
   getDisplayConfig,
   getReferenceTables,
   getReferenceTable,
@@ -376,6 +591,7 @@ module.exports = {
   getFieldMapping,
   getExtraFields,
   getMessagesForCapability,
+  getAllUbxCfgKeys,
   applyConversions,
   formatValue,
   getAllMessageDefinitions,

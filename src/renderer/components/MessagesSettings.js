@@ -14,7 +14,9 @@ class MessagesSettings {
     this.categoryFilter = 'all';
     this._loaded = false;
     this._refreshing = false;
+    this._pendingRefresh = false;
     this._deviceCaps = null;    // null = unknown/show all, else { ins, dual_ant, ... }
+    this._connected = false;
 
     // DOM refs - Columns
     this.colNmea = document.getElementById('msg-col-nmea');
@@ -84,11 +86,19 @@ class MessagesSettings {
     this.btnApply?.addEventListener('click', () => this.applyChanges());
     this.btnSave?.addEventListener('click', () => this.saveConfig());
 
+    // Dashboard/card LOG state changes should reflect in Settings immediately.
+    window.addEventListener('log-changed', () => {
+      if (!this._connected) return;
+      if (this._logChangedTimer) clearTimeout(this._logChangedTimer);
+      this._logChangedTimer = setTimeout(() => this.refreshPortsAndState(), 350);
+    });
+
     this._initTrayEvents();
   }
 
   // Called from app.js when connection status changes
   async onConnectionChanged(connected) {
+    this._connected = !!connected;
     if (connected) {
       // Ensure message table is loaded first
       if (!this._loaded) {
@@ -132,16 +142,43 @@ class MessagesSettings {
    *                            null = unknown device, show everything
    */
   applyCapabilities(caps) {
+    const prevFamily = this._deviceCaps?.family || null;
+    const prevDetected = this._deviceCaps?.detected === true;
     this._deviceCaps = caps;
-    if (this._loaded) this._renderMessages();
+    if (this._loaded) {
+      this._renderMessages(); // rebuilds column visibility + headers
+      // Restore checkbox/active states after re-render
+      if (this.activeEntries && this.activeEntries.length > 0) {
+        this._syncFromLoglista();
+      }
+    }
+
+    // Device family was resolved after connection: refresh ports with the right query path.
+    const nextFamily = caps?.family || null;
+    const nextDetected = caps?.detected === true;
+    const familyChanged = prevFamily !== nextFamily;
+    const becameDetected = !prevDetected && nextDetected;
+    if (this._connected && nextDetected && (familyChanged || becameDetected)) {
+      setTimeout(() => this.refreshPortsAndState(), 250);
+    }
   }
 
   /**
    * Returns true if a message should be visible for the current device caps.
    */
   _isMessageVisible(msg) {
-    // null = disconnected, detected:false = unknown device → show everything
+    // null = disconnected, detected:false = unknown device -> show everything
     if (!this._deviceCaps || !this._deviceCaps.detected) return true;
+
+    const family = this._deviceCaps.family;
+    if (msg.device_family === 'bynav' && family === 'ublox') return false;
+    if (msg.device_family === 'ublox' && family !== 'ublox') return false;
+
+    // u-blox: show only NMEA sentences that have a concrete CFG-MSGOUT key mapping
+    if (family === 'ublox' && msg.category === 'nmea' && msg.supportedOnUblox !== true) {
+      return false;
+    }
+
     if (!msg.requires) return true;
     return this._deviceCaps[msg.requires] !== false;
   }
@@ -151,19 +188,29 @@ class MessagesSettings {
   _renderMessages() {
     if (!this.colNmea || !this.colAscii || !this.colBinary) return;
 
+    const isUblox = this._deviceCaps?.family === 'ublox';
+
+    // Update column headers for device family context
+    const asciiCard   = document.querySelector('[data-category-card="ascii"]');
+    const binaryTitle = document.querySelector('[data-category-card="binary"] .msg-column-title');
+    if (asciiCard)   asciiCard.style.display  = isUblox ? 'none' : '';
+    if (binaryTitle) binaryTitle.textContent   = isUblox ? 'UBX'  : 'BINARY';
+
     // Clear columns
     this.colNmea.innerHTML = '';
     this.colAscii.innerHTML = '';
     this.colBinary.innerHTML = '';
 
     const categories = {
-      nmea: { col: this.colNmea, countEl: this.countNmea, count: 0 },
-      ascii: { col: this.colAscii, countEl: this.countAscii, count: 0 },
-      binary: { col: this.colBinary, countEl: this.countBinary, count: 0 }
+      nmea:   { col: this.colNmea,   countEl: this.countNmea,   count: 0 },
+      ascii:  { col: this.colAscii,  countEl: this.countAscii,  count: 0 },
+      binary: { col: this.colBinary, countEl: this.countBinary, count: 0 },
+      // UBX messages share the binary column (it's relabelled "UBX" for u-blox)
+      ubx:    { col: this.colBinary, countEl: this.countBinary, count: 0 },
     };
 
     for (const msg of this.messages) {
-      // Cihaz capability'sine göre filtrele
+      // Filter by device capability and family
       if (!this._isMessageVisible(msg)) continue;
 
       const catKey = msg.category || 'ascii'; // default fallback
@@ -175,10 +222,15 @@ class MessagesSettings {
       target.count++;
     }
 
-    // Update counts
-    Object.values(categories).forEach(c => {
+    // Update counts (ubx and binary share the same countEl — use binary's final count)
+    for (const [key, c] of Object.entries(categories)) {
+      if (key === 'ubx') continue; // binary countEl already accumulated above
       if (c.countEl) c.countEl.textContent = c.count;
-    });
+    }
+    // Binary column count = binary + ubx combined
+    if (this.countBinary) {
+      this.countBinary.textContent = categories.binary.count + categories.ubx.count;
+    }
   }
 
   _createMessageItem(msg) {
@@ -189,6 +241,8 @@ class MessagesSettings {
     item.dataset.command = msg.command;
     item.dataset.familyKey = msg.familyKey;
     item.dataset.variant = msg.variant;
+    if (msg.cfgKeys) item.dataset.cfgKeys = JSON.stringify(msg.cfgKeys);
+    if (msg.cfgKeyUart1 && !msg.cfgKeys) item.dataset.cfgKeyUart1 = msg.cfgKeyUart1;
 
     // Content container
     const content = document.createElement('div');
@@ -305,8 +359,58 @@ class MessagesSettings {
   // --- Port Discovery ---
 
   async refreshPortsAndState() {
-    if (this._refreshing) return;
+    if (this._refreshing) {
+      this._pendingRefresh = true;
+      return;
+    }
     this._refreshing = true;
+    this._pendingRefresh = false;
+
+    // Device family is still being detected; avoid sending BYNAV-only queries.
+    if (!this._deviceCaps || this._deviceCaps.detected !== true) {
+      this._setStatus('Waiting for device detection…');
+      this._completeRefreshCycle();
+      return;
+    }
+
+    // u-blox: ASCII queries (COMCONFIG / ICOMCONFIG / LOGLISTA) are not supported.
+    // Use CFG-VALGET instead to get port config and active message rates.
+    if (this._deviceCaps?.family === 'ublox') {
+      try {
+        this._setStatus('Querying u-blox ports…');
+        // Immediate usable tray state while detailed status query is still running.
+        this.ports = this._getDefaultUbloxPorts(this.activeEntries || []);
+        this._renderPortChips();
+
+        const quickPortResult = this.api.requestUbxPorts
+          ? await this.api.requestUbxPorts()
+          : await this.api.requestUbxStatus();
+        const quickPorts = Array.isArray(quickPortResult?.ports) ? quickPortResult.ports : [];
+        if (quickPorts.length > 0) {
+          this.ports = quickPorts;
+          this._renderPortChips();
+        }
+
+        this._setStatus('Querying u-blox active messages…');
+        const result = await this.api.requestUbxStatus();
+        const activeMsgs = Array.isArray(result?.activeMsgs) ? result.activeMsgs : [];
+        const queriedPorts = Array.isArray(result?.ports) ? result.ports : [];
+        this.ports = queriedPorts.length > 0
+          ? queriedPorts
+          : this._getDefaultUbloxPorts(activeMsgs);
+        this._renderPortChips();
+        this.activeEntries = activeMsgs;
+        this._syncFromLoglista();
+        this._setStatus(`u-blox — ${this.activeEntries.length} active message(s)`);
+      } catch (e) {
+        console.error('[MessagesSettings] u-blox status query failed:', e);
+        this.ports = this._getDefaultUbloxPorts([]);
+        this._renderPortChips();
+        this._setStatus('u-blox query failed (showing default ports)');
+      }
+      this._completeRefreshCycle();
+      return;
+    }
 
     try {
       // 1. Fetch serial ports (COMCONFIG)
@@ -344,7 +448,15 @@ class MessagesSettings {
       this._setStatus('Refresh failed');
     }
 
+    this._completeRefreshCycle();
+  }
+
+  _completeRefreshCycle() {
     this._refreshing = false;
+    if (this._pendingRefresh) {
+      this._pendingRefresh = false;
+      setTimeout(() => this.refreshPortsAndState(), 60);
+    }
   }
 
   _initTrayEvents() {
@@ -415,6 +527,31 @@ class MessagesSettings {
     this._renderGroupChips(this.ethernetPortContainer, ethernetPorts, 'No ethernet ports found');
 
     this._updateDockSummary();
+  }
+
+  _getDefaultUbloxPorts(activeMsgs = []) {
+    const defaults = [
+      { name: 'UART1', type: 'serial', baud: '-', inMode: '-', outMode: '-' },
+      { name: 'UART2', type: 'serial', baud: '-', inMode: '-', outMode: '-' },
+      { name: 'USB', type: 'usb', inMode: '-', outMode: '-' }
+    ];
+    const map = new Map(defaults.map((p) => [String(p.name).toUpperCase(), { ...p }]));
+
+    for (const entry of activeMsgs) {
+      const portName = String(entry?.port || '').toUpperCase();
+      if (!portName) continue;
+      if (!map.has(portName)) {
+        map.set(portName, {
+          name: portName,
+          type: portName.startsWith('ICOM') ? 'ethernet' : 'serial',
+          baud: '-',
+          inMode: '-',
+          outMode: '-'
+        });
+      }
+    }
+
+    return [...map.values()];
   }
 
   _renderGroupChips(container, ports, emptyText) {
@@ -555,7 +692,6 @@ class MessagesSettings {
       }
     }
   }
-
   _findMatchingItem(msgName) {
     const upper = msgName.toUpperCase();
     const items = document.querySelectorAll('.msg-item');
@@ -568,9 +704,154 @@ class MessagesSettings {
     return null;
   }
 
+  _getItemCfgKeys(item) {
+    if (!item) return null;
+    if (item.dataset.cfgKeys) {
+      try {
+        return JSON.parse(item.dataset.cfgKeys);
+      } catch {
+        return null;
+      }
+    }
+    if (item.dataset.cfgKeyUart1) {
+      return { uart1: parseInt(item.dataset.cfgKeyUart1, 10) };
+    }
+    return null;
+  }
+
+  _getUbloxTargetPorts() {
+    const mapPort = (name) => {
+      const n = String(name || '').toUpperCase();
+      if (n.includes('UART1')) return 'uart1';
+      if (n.includes('UART2')) return 'uart2';
+      if (n === 'USB' || n.includes(' USB')) return 'usb';
+      return null;
+    };
+
+    const selected = [];
+    if (this.selectedPorts.size > 0) {
+      for (const p of this.selectedPorts) {
+        const mapped = mapPort(p);
+        if (mapped) selected.push(mapped);
+      }
+    }
+    if (selected.length > 0) return [...new Set(selected)];
+
+    const discovered = (this.ports || []).map((p) => mapPort(p?.name)).filter(Boolean);
+    if (discovered.length > 0) return [...new Set(discovered)];
+
+    return ['uart1', 'uart2', 'usb'];
+  }
+
+  _buildUbloxOpsFromItems(items, { includeUnchecked }) {
+    const targetPorts = this._getUbloxTargetPorts();
+    const ops = [];
+
+    items.forEach((item) => {
+      const cfgKeys = this._getItemCfgKeys(item);
+      if (!cfgKeys) return;
+
+      const cb = item.querySelector('.msg-item-check');
+      const enabled = !!cb?.checked;
+      if (!enabled && !includeUnchecked) return;
+
+      const hzInput = item.querySelector('.msg-item-hz-input');
+      const rateDiv = enabled ? Math.max(1, Math.min(255, parseInt(hzInput?.value, 10) || 1)) : 0;
+
+      for (const port of targetPorts) {
+        const key = cfgKeys[port];
+        if (key == null) continue;
+        ops.push({
+          msg: item.dataset.msg,
+          port: port.toUpperCase(),
+          key,
+          rateDiv
+        });
+      }
+    });
+
+    return ops;
+  }
+
+  async _applyUbxOperations(ops, successPrefix = 'Applied') {
+    if (!Array.isArray(ops) || ops.length === 0) {
+      this._setStatus('No configurable u-blox message operations');
+      return { ok: false, results: [] };
+    }
+
+    this._setStatus(`Sending ${ops.length} UBX CFG-VALSET operation(s)...`);
+    let result;
+    try {
+      result = await this.api.applyUbxRates(ops);
+    } catch (e) {
+      console.error('[MessagesSettings] UBX apply error:', e);
+      this._setStatus('UBX apply failed: transport error', 'danger');
+      return { ok: false, results: [] };
+    }
+
+    if (!result || !Array.isArray(result.results)) {
+      this._setStatus('UBX apply failed: no response', 'danger');
+      return { ok: false, results: [] };
+    }
+
+    const failed = result.results.filter((r) => !r.ok);
+    if (failed.length === 0) {
+      this._setStatus(`${successPrefix}: ${result.applied} operation(s) device-confirmed`);
+    } else {
+      const sample = failed.slice(0, 2).map((r) => `${r.msg}/${r.port}:${r.status}`).join(', ');
+      this._setStatus(`${successPrefix}: ${result.applied}/${ops.length} confirmed, ${failed.length} failed (${sample})`, 'danger');
+    }
+
+    // Reflect confirmed device state immediately in UI; don't wait for slow refresh.
+    this._syncUbxLocalStateFromResults(result.results);
+    setTimeout(() => this.refreshPortsAndState(), 450);
+    return { ok: failed.length === 0, results: result.results };
+  }
+
+  _syncUbxLocalStateFromResults(results) {
+    if (!Array.isArray(results)) return;
+    const map = new Map();
+
+    for (const entry of this.activeEntries || []) {
+      if (!entry?.msg || !entry?.port) continue;
+      const key = `${String(entry.msg).toUpperCase()}|${String(entry.port).toUpperCase()}`;
+      map.set(key, entry);
+    }
+
+    for (const r of results) {
+      if (!r?.confirmed) continue;
+      const msg = String(r.msg || '').toUpperCase();
+      const port = String(r.port || '').toUpperCase();
+      const expected = Number(r.expected);
+      if (!msg || !port || !Number.isFinite(expected)) continue;
+      const key = `${msg}|${port}`;
+
+      if (expected <= 0) {
+        map.delete(key);
+        continue;
+      }
+
+      map.set(key, {
+        port,
+        msg,
+        mode: 'ONTIME',
+        period: 1.0 / expected,
+        extra: 0,
+        hold: '0'
+      });
+    }
+
+    this.activeEntries = [...map.values()];
+    this._syncFromLoglista();
+  }
+
   // --- Actions ---
 
   async applyChanges() {
+    if (this._deviceCaps?.family === 'ublox') {
+      return this._applyChangesUblox();
+    }
+
     const items = document.querySelectorAll('.msg-item');
     if (!items) return;
 
@@ -595,7 +876,7 @@ class MessagesSettings {
           commands.push({ name, cmd: `LOG ${command} ONNEW` });
         }
       } else {
-        const hz = parseInt(hzInput?.value) || 1;
+        const hz = parseInt(hzInput?.value, 10) || 1;
         if (hz < 1 || hz > 100) {
           this._setStatus(`Invalid Hz for ${name}: must be 1-100`, 'danger');
           errors++;
@@ -627,34 +908,54 @@ class MessagesSettings {
     }
 
     this._setStatus(`Applied: ${sent}/${commands.length} command(s) sent`);
-
-    // Refresh LOGLISTA after delay
     setTimeout(() => this.refreshPortsAndState(), 500);
   }
 
+  async _applyChangesUblox() {
+    const items = document.querySelectorAll('.msg-item');
+    const ops = this._buildUbloxOpsFromItems(items, { includeUnchecked: true });
+    await this._applyUbxOperations(ops, 'Applied');
+  }
+
   async stopAll() {
-    if (this.selectedPorts.size === 0) {
-      // Send general UNLOGALL
-      this._setStatus('Sending UNLOGALL...');
-      await this.api.sendCommand('UNLOGALL');
+    let stopSucceeded = true;
+
+    if (this._deviceCaps?.family === 'ublox') {
+      const items = document.querySelectorAll('.msg-item');
+      const ops = [];
+      const targetPorts = this._getUbloxTargetPorts();
+
+      items.forEach((item) => {
+        const cfgKeys = this._getItemCfgKeys(item);
+        if (!cfgKeys) return;
+        for (const port of targetPorts) {
+          const key = cfgKeys[port];
+          if (key == null) continue;
+          ops.push({ msg: item.dataset.msg, port: port.toUpperCase(), key, rateDiv: 0 });
+        }
+      });
+
+      const result = await this._applyUbxOperations(ops, 'Stopped');
+      stopSucceeded = !!result?.ok;
     } else {
-      const ports = [...this.selectedPorts];
-      this._setStatus(`Stopping all on ${ports.join(', ')}...`);
-      for (const port of ports) {
-        await this.api.sendCommand(`UNLOGALL ${port}`);
+      if (this.selectedPorts.size === 0) {
+        this._setStatus('Sending UNLOGALL...');
+        await this.api.sendCommand('UNLOGALL');
+      } else {
+        const ports = [...this.selectedPorts];
+        this._setStatus(`Stopping all on ${ports.join(', ')}...`);
+        for (const port of ports) {
+          await this.api.sendCommand(`UNLOGALL ${port}`);
+        }
       }
+      setTimeout(() => this.refreshPortsAndState(), 500);
     }
 
-    // Clear all checkboxes
-    const checkboxes = document.querySelectorAll('.msg-item-check');
-    checkboxes.forEach(cb => { cb.checked = false; });
-
-    // Clear active states
-    const items = document.querySelectorAll('.msg-item');
-    items.forEach(i => i.classList.remove('active-log'));
-
-    this._setStatus('All messages stopped');
-    setTimeout(() => this.refreshPortsAndState(), 500);
+    document.querySelectorAll('.msg-item-check').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.msg-item').forEach(i => i.classList.remove('active-log'));
+    if (this._deviceCaps?.family !== 'ublox' || stopSucceeded) {
+      this._setStatus('All messages stopped');
+    }
   }
 
   async saveConfig() {
@@ -664,11 +965,31 @@ class MessagesSettings {
   }
 
   async _onCheckboxChanged(msg, checked) {
-    if (checked) return; // Only send UNLOG on uncheck
+    if (checked) return;
 
-    // Check if the message is actually active
     const item = document.querySelector(`.msg-item[data-msg="${msg.name}"]`);
     if (!item?.classList.contains('active-log')) return;
+
+    if (this._deviceCaps?.family === 'ublox') {
+      const cfgKeys = this._getItemCfgKeys(item);
+      if (!cfgKeys) return;
+
+      const targetPorts = this._getUbloxTargetPorts();
+      const ops = [];
+      for (const port of targetPorts) {
+        const key = cfgKeys[port];
+        if (key == null) continue;
+        ops.push({ msg: msg.name, port: port.toUpperCase(), key, rateDiv: 0 });
+      }
+
+      const result = await this._applyUbxOperations(ops, 'Stopped');
+      if (result.ok) {
+        item.classList.remove('active-log');
+        const dot = item.querySelector('.msg-item-active-dot');
+        if (dot) dot.title = 'Not logging';
+      }
+      return;
+    }
 
     if (this.selectedPorts.size > 0) {
       for (const port of this.selectedPorts) {
@@ -677,9 +998,6 @@ class MessagesSettings {
     } else {
       await this.api.sendCommand(`UNLOG ${msg.command}`);
     }
-
-    // Visual feedback handled by refresh, but optimistically clear for now?
-    // Nah, let refresh handle it.
     setTimeout(() => this.refreshPortsAndState(), 300);
   }
 

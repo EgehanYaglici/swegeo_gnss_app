@@ -1,0 +1,581 @@
+{
+  _meta: {
+    version: "1.0",
+    family: "ublox-f9p",
+    description: "Phase-1 F9P JSON5-first message definitions",
+    notes: [
+      "cfg_keys are UBX-CFG-VALSET/VALGET keys for UART1/UART2/USB.",
+      "All apply operations are RAM-only in phase-1.",
+      "NMEA coverage includes the full F9P standard NMEA MSGOUT key set."
+    ]
+  },
+
+  // ------------------------------------------------------------
+  // UBX core telemetry (phase-1)
+  // ------------------------------------------------------------
+  UBX_NAV_PVT: {
+    requires: null,
+    label: "Navigation PVT Solution",
+    description: "Position, velocity and time solution with fix and accuracy flags.",
+    binary: {
+      tag: "UBX-NAV-PVT",
+      id: 263,
+      ubx_class: 1,
+      ubx_id: 7,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x20910007,
+        uart2: 0x20910008,
+        usb: 0x20910009
+      },
+      payload_length: 92,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week" },
+        { name: "year", type: "uint16", unit: "", note: "UTC year" },
+        { name: "month", type: "uint8", unit: "", note: "UTC month" },
+        { name: "day", type: "uint8", unit: "", note: "UTC day" },
+        { name: "hour", type: "uint8", unit: "", note: "UTC hour" },
+        { name: "min", type: "uint8", unit: "", note: "UTC minute" },
+        { name: "sec", type: "uint8", unit: "", note: "UTC second" },
+        { name: "valid", type: "uint8", unit: "", note: "Validity flags" },
+        { name: "tAcc", type: "uint32", unit: "ns", note: "Time accuracy" },
+        { name: "nano", type: "int32", unit: "ns", note: "Fractional second" },
+        { name: "fixType", type: "uint8", unit: "", note: "Fix type" },
+        { name: "flags", type: "uint8", unit: "", note: "Solution flags" },
+        { name: "flags2", type: "uint8", unit: "", note: "Additional flags" },
+        { name: "numSV", type: "uint8", unit: "", note: "Satellites used" },
+        { name: "lon", type: "int32", unit: "deg", scale: 1e-7, note: "Longitude" },
+        { name: "lat", type: "int32", unit: "deg", scale: 1e-7, note: "Latitude" },
+        { name: "height", type: "int32", unit: "m", scale: 0.001, note: "Height above ellipsoid" },
+        { name: "hMSL", type: "int32", unit: "m", scale: 0.001, note: "Height above MSL" },
+        { name: "hAcc", type: "uint32", unit: "m", scale: 0.001, note: "Horizontal accuracy" },
+        { name: "vAcc", type: "uint32", unit: "m", scale: 0.001, note: "Vertical accuracy" },
+        { name: "velN", type: "int32", unit: "m/s", scale: 0.001, note: "North velocity" },
+        { name: "velE", type: "int32", unit: "m/s", scale: 0.001, note: "East velocity" },
+        { name: "velD", type: "int32", unit: "m/s", scale: 0.001, note: "Down velocity" },
+        { name: "gSpeed", type: "int32", unit: "m/s", scale: 0.001, note: "Ground speed" },
+        { name: "headMot", type: "int32", unit: "deg", scale: 1e-5, note: "Heading of motion" },
+        { name: "sAcc", type: "uint32", unit: "m/s", scale: 0.001, note: "Speed accuracy" },
+        { name: "headAcc", type: "uint32", unit: "deg", scale: 1e-5, note: "Heading accuracy" },
+        { name: "pDOP", type: "uint16", unit: "", scale: 0.01, note: "Position DOP" },
+        { name: "flags3", type: "uint16", unit: "", note: "Additional status flags" },
+        { name: "_res0", type: "uint32", unit: "", note: "Reserved" },
+        { name: "headVeh", type: "int32", unit: "deg", scale: 1e-5, note: "Vehicle heading" },
+        { name: "magDec", type: "int16", unit: "deg", scale: 0.01, note: "Magnetic declination" },
+        { name: "magAcc", type: "uint16", unit: "deg", scale: 0.01, note: "Magnetic declination accuracy" }
+      ]
+    }
+  },
+
+  UBX_NAV_POSLLH: {
+    requires: null,
+    label: "Geodetic Position Solution",
+    description: "Latitude/longitude/height and accuracy estimates.",
+    binary: {
+      tag: "UBX-NAV-POSLLH",
+      id: 258,
+      ubx_class: 1,
+      ubx_id: 2,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x2091002a,
+        uart2: 0x2091002b,
+        usb: 0x2091002c
+      },
+      payload_length: 28,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week" },
+        { name: "lon", type: "int32", unit: "deg", scale: 1e-7, note: "Longitude" },
+        { name: "lat", type: "int32", unit: "deg", scale: 1e-7, note: "Latitude" },
+        { name: "height", type: "int32", unit: "m", scale: 0.001, note: "Height above ellipsoid" },
+        { name: "hMSL", type: "int32", unit: "m", scale: 0.001, note: "Height above MSL" },
+        { name: "hAcc", type: "uint32", unit: "m", scale: 0.001, note: "Horizontal accuracy" },
+        { name: "vAcc", type: "uint32", unit: "m", scale: 0.001, note: "Vertical accuracy" }
+      ]
+    }
+  },
+
+  UBX_NAV_VELNED: {
+    requires: null,
+    label: "NED Velocity Solution",
+    description: "Velocity components with speed and heading accuracy.",
+    binary: {
+      tag: "UBX-NAV-VELNED",
+      id: 274,
+      ubx_class: 1,
+      ubx_id: 18,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x20910043,
+        uart2: 0x20910044,
+        usb: 0x20910045
+      },
+      payload_length: 36,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week" },
+        { name: "velN", type: "int32", unit: "m/s", scale: 0.01, note: "North velocity" },
+        { name: "velE", type: "int32", unit: "m/s", scale: 0.01, note: "East velocity" },
+        { name: "velD", type: "int32", unit: "m/s", scale: 0.01, note: "Down velocity" },
+        { name: "speed", type: "uint32", unit: "m/s", scale: 0.01, note: "3D speed" },
+        { name: "gSpeed", type: "uint32", unit: "m/s", scale: 0.01, note: "Ground speed" },
+        { name: "heading", type: "int32", unit: "deg", scale: 1e-5, note: "Heading of motion" },
+        { name: "sAcc", type: "uint32", unit: "m/s", scale: 0.01, note: "Speed accuracy" },
+        { name: "cAcc", type: "uint32", unit: "deg", scale: 1e-5, note: "Heading accuracy" }
+      ]
+    }
+  },
+
+  UBX_NAV_STATUS: {
+    requires: null,
+    label: "Receiver Navigation Status",
+    description: "Navigation status and time-to-first-fix metrics.",
+    binary: {
+      tag: "UBX-NAV-STATUS",
+      id: 259,
+      ubx_class: 1,
+      ubx_id: 3,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x2091001b,
+        uart2: 0x2091001c,
+        usb: 0x2091001d
+      },
+      payload_length: 16,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week" },
+        { name: "gpsFix", type: "uint8", unit: "", note: "Fix type" },
+        { name: "flags", type: "uint8", unit: "", note: "Fix flags" },
+        { name: "fixStat", type: "uint8", unit: "", note: "Fix status bits" },
+        { name: "flags2", type: "uint8", unit: "", note: "Additional status bits" },
+        { name: "ttff", type: "uint32", unit: "ms", note: "Time to first fix" },
+        { name: "msss", type: "uint32", unit: "ms", note: "Milliseconds since startup" }
+      ]
+    }
+  },
+
+  UBX_NAV_DOP: {
+    requires: null,
+    label: "Dilution of Precision",
+    description: "DOP set for solution quality diagnostics.",
+    binary: {
+      tag: "UBX-NAV-DOP",
+      id: 260,
+      ubx_class: 1,
+      ubx_id: 4,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x20910039,
+        uart2: 0x2091003a,
+        usb: 0x2091003b
+      },
+      payload_length: 18,
+      fields: [
+        { name: "iTOW", type: "uint32", unit: "ms", note: "GPS time of week" },
+        { name: "gDOP", type: "uint16", unit: "", scale: 0.01, note: "Geometric DOP" },
+        { name: "pDOP", type: "uint16", unit: "", scale: 0.01, note: "Position DOP" },
+        { name: "tDOP", type: "uint16", unit: "", scale: 0.01, note: "Time DOP" },
+        { name: "vDOP", type: "uint16", unit: "", scale: 0.01, note: "Vertical DOP" },
+        { name: "hDOP", type: "uint16", unit: "", scale: 0.01, note: "Horizontal DOP" },
+        { name: "nDOP", type: "uint16", unit: "", scale: 0.01, note: "Northing DOP" },
+        { name: "eDOP", type: "uint16", unit: "", scale: 0.01, note: "Easting DOP" }
+      ]
+    }
+  },
+
+  UBX_MON_VER: {
+    requires: null,
+    label: "Receiver Version",
+    description: "Firmware and hardware identification (poll response).",
+    binary: {
+      tag: "UBX-MON-VER",
+      id: 2564,
+      ubx_class: 10,
+      ubx_id: 4,
+      default_rate_hz: 0,
+      cfg_keys: null,
+      payload_length: null,
+      special_parser: true,
+      fields: []
+    }
+  },
+
+  UBX_MON_RF: {
+    requires: "rf_monitor",
+    label: "RF Health Monitor",
+    description: "RF frontend health, antenna supervisor state and jamming indicators.",
+    binary: {
+      tag: "UBX-MON-RF",
+      id: 2616,
+      ubx_class: 10,
+      ubx_id: 56,
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x2091035a,
+        uart2: 0x2091035b,
+        usb: 0x2091035c
+      },
+      payload_length: null,
+      fields: [
+        { name: "version", type: "uint8", unit: "", note: "Message version (0x00)" },
+        { name: "nBlocks", type: "uint8", unit: "", note: "Number of RF blocks in payload" },
+        { name: "_reserved0", type: "uint8", unit: "", count: 2, note: "Reserved" },
+
+        { name: "block0_blockId", type: "uint8", unit: "", note: "RF block ID (0=L1)" },
+        { name: "block0_flags", type: "uint8", unit: "", note: "Flags (jammingState in bits 1..0)" },
+        { name: "block0_antStatus", type: "uint8", unit: "", note: "Antenna supervisor state" },
+        { name: "block0_antPower", type: "uint8", unit: "", note: "Antenna power state" },
+        { name: "block0_postStatus", type: "uint32", unit: "", note: "POST status word" },
+        { name: "block0_reserved1", type: "uint8", unit: "", count: 4, note: "Reserved" },
+        { name: "block0_noisePerMS", type: "uint16", unit: "", note: "Noise level from GNSS core" },
+        { name: "block0_agcCnt", type: "uint16", unit: "", note: "AGC monitor count (0..8191)" },
+        { name: "block0_jamInd", type: "uint8", unit: "", note: "CW jamming indicator (0..255)" },
+        { name: "block0_ofsI", type: "int8", unit: "", note: "I-path imbalance (-128..127)" },
+        { name: "block0_magI", type: "uint8", unit: "", note: "I-path magnitude (0..255)" },
+        { name: "block0_ofsQ", type: "int8", unit: "", note: "Q-path imbalance (-128..127)" },
+        { name: "block0_magQ", type: "uint8", unit: "", note: "Q-path magnitude (0..255)" },
+        { name: "block0_reserved2", type: "uint8", unit: "", count: 3, note: "Reserved" },
+
+        { name: "block1_blockId", type: "uint8", unit: "", note: "RF block ID (1=L2/L5 product dependent)" },
+        { name: "block1_flags", type: "uint8", unit: "", note: "Flags (jammingState in bits 1..0)" },
+        { name: "block1_antStatus", type: "uint8", unit: "", note: "Antenna supervisor state" },
+        { name: "block1_antPower", type: "uint8", unit: "", note: "Antenna power state" },
+        { name: "block1_postStatus", type: "uint32", unit: "", note: "POST status word" },
+        { name: "block1_reserved1", type: "uint8", unit: "", count: 4, note: "Reserved" },
+        { name: "block1_noisePerMS", type: "uint16", unit: "", note: "Noise level from GNSS core" },
+        { name: "block1_agcCnt", type: "uint16", unit: "", note: "AGC monitor count (0..8191)" },
+        { name: "block1_jamInd", type: "uint8", unit: "", note: "CW jamming indicator (0..255)" },
+        { name: "block1_ofsI", type: "int8", unit: "", note: "I-path imbalance (-128..127)" },
+        { name: "block1_magI", type: "uint8", unit: "", note: "I-path magnitude (0..255)" },
+        { name: "block1_ofsQ", type: "int8", unit: "", note: "Q-path imbalance (-128..127)" },
+        { name: "block1_magQ", type: "uint8", unit: "", note: "Q-path magnitude (0..255)" },
+        { name: "block1_reserved2", type: "uint8", unit: "", count: 3, note: "Reserved" }
+      ]
+    }
+  },
+
+  // ------------------------------------------------------------
+  // NMEA telemetry (full F9P standard set)
+  // ------------------------------------------------------------
+  NMEA_DTM: {
+    requires: null,
+    label: "Datum Reference",
+    description: "Map datum and local datum offsets.",
+    nmea: {
+      tag: "DTM",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100a7,
+        uart2: 0x209100a8,
+        usb: 0x209100a9
+      },
+      fields: [
+        { name: "datum_code", type: "str", unit: "", note: "Local datum code" },
+        { name: "sub_code", type: "str", unit: "", note: "Datum subdivision code" },
+        { name: "lat_off", type: "float", unit: "min", note: "Latitude offset" },
+        { name: "ns", type: "hemi_ns", unit: "", note: "N/S indicator" },
+        { name: "lon_off", type: "float", unit: "min", note: "Longitude offset" },
+        { name: "ew", type: "hemi_ew", unit: "", note: "E/W indicator" },
+        { name: "alt_off", type: "float", unit: "m", note: "Altitude offset" },
+        { name: "ref_datum", type: "str", unit: "", note: "Reference datum code" }
+      ]
+    }
+  },
+
+  NMEA_GBS: {
+    requires: null,
+    label: "GNSS Satellite Fault Detection",
+    description: "Estimated position errors and RAIM fault data.",
+    nmea: {
+      tag: "GBS",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100de,
+        uart2: 0x209100df,
+        usb: 0x209100e0
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "err_lat_m", type: "float", unit: "m", note: "Expected latitude error" },
+        { name: "err_lon_m", type: "float", unit: "m", note: "Expected longitude error" },
+        { name: "err_alt_m", type: "float", unit: "m", note: "Expected altitude error" },
+        { name: "failed_svid", type: "int", unit: "", note: "Failed satellite PRN/SVID" },
+        { name: "prob_failed", type: "float", unit: "", note: "Failure probability" },
+        { name: "bias_m", type: "float", unit: "m", note: "Bias estimate" },
+        { name: "stddev_m", type: "float", unit: "m", note: "Bias standard deviation" }
+      ]
+    }
+  },
+
+  NMEA_GGA: {
+    requires: null,
+    label: "GPS Fix Data",
+    description: "Core positioning summary sentence.",
+    nmea: {
+      tag: "GGA",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100bb,
+        uart2: 0x209100bc,
+        usb: 0x209100bd
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "lat_dm", type: "lat_dm", unit: "deg", note: "Latitude ddmm.mmmm" },
+        { name: "ns", type: "hemi_ns", unit: "", note: "N/S indicator" },
+        { name: "lon_dm", type: "lon_dm", unit: "deg", note: "Longitude dddmm.mmmm" },
+        { name: "ew", type: "hemi_ew", unit: "", note: "E/W indicator" },
+        { name: "sol_status", type: "int", unit: "", note: "Solution status" },
+        { name: "num_sats", type: "int", unit: "count", note: "Satellites used" },
+        { name: "hdop", type: "float", unit: "", note: "Horizontal DOP" },
+        { name: "alt_m", type: "float", unit: "m", note: "Altitude above mean sea level" }
+      ]
+    }
+  },
+
+  NMEA_GLL: {
+    requires: null,
+    label: "Geographic Position - Latitude/Longitude",
+    description: "Latitude/longitude with UTC and validity status.",
+    nmea: {
+      tag: "GLL",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100ca,
+        uart2: 0x209100cb,
+        usb: 0x209100cc
+      },
+      fields: [
+        { name: "lat_dm", type: "lat_dm", unit: "deg", note: "Latitude ddmm.mmmm" },
+        { name: "ns", type: "hemi_ns", unit: "", note: "N/S indicator" },
+        { name: "lon_dm", type: "lon_dm", unit: "deg", note: "Longitude dddmm.mmmm" },
+        { name: "ew", type: "hemi_ew", unit: "", note: "E/W indicator" },
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "pos_status", type: "str", unit: "", note: "A=valid, V=invalid" },
+        { name: "mode_ind", type: "str", unit: "", note: "NMEA mode indicator" }
+      ]
+    }
+  },
+
+  NMEA_GNS: {
+    requires: null,
+    label: "GNSS Fix Data",
+    description: "Position, mode and quality summary for combined GNSS.",
+    nmea: {
+      tag: "GNS",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100b6,
+        uart2: 0x209100b7,
+        usb: 0x209100b8
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "lat_dm", type: "lat_dm", unit: "deg", note: "Latitude ddmm.mmmm" },
+        { name: "ns", type: "hemi_ns", unit: "", note: "N/S indicator" },
+        { name: "lon_dm", type: "lon_dm", unit: "deg", note: "Longitude dddmm.mmmm" },
+        { name: "ew", type: "hemi_ew", unit: "", note: "E/W indicator" },
+        { name: "mode_ind", type: "str", unit: "", note: "Mode indicator string" },
+        { name: "num_sats", type: "int", unit: "count", note: "Satellites used" },
+        { name: "hdop", type: "float", unit: "", note: "Horizontal DOP" },
+        { name: "alt_m", type: "float", unit: "m", note: "Orthometric altitude" }
+      ]
+    }
+  },
+
+  NMEA_GRS: {
+    requires: null,
+    label: "GNSS Range Residuals",
+    description: "Residual errors for satellites used in solution.",
+    nmea: {
+      tag: "GRS",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100cf,
+        uart2: 0x209100d0,
+        usb: 0x209100d1
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "mode", type: "int", unit: "", note: "Residual mode" },
+        { name: "res_1", type: "float", unit: "m", note: "Residual for SV1" },
+        { name: "res_2", type: "float", unit: "m", note: "Residual for SV2" },
+        { name: "res_3", type: "float", unit: "m", note: "Residual for SV3" },
+        { name: "res_4", type: "float", unit: "m", note: "Residual for SV4" },
+        { name: "res_5", type: "float", unit: "m", note: "Residual for SV5" },
+        { name: "res_6", type: "float", unit: "m", note: "Residual for SV6" }
+      ]
+    }
+  },
+
+  NMEA_GSA: {
+    requires: null,
+    label: "DOP and Active Satellites",
+    description: "Fix mode and DOP values.",
+    nmea: {
+      tag: "GSA",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100c0,
+        uart2: 0x209100c1,
+        usb: 0x209100c2
+      },
+      fields: [
+        { name: "mode_sel", type: "str", unit: "", note: "Auto/manual fix selection" },
+        { name: "mode", type: "int", unit: "", note: "Fix mode 1/2/3" },
+        { name: "pdop", type: "float", unit: "", note: "Position DOP" },
+        { name: "hdop", type: "float", unit: "", note: "Horizontal DOP" },
+        { name: "vdop", type: "float", unit: "", note: "Vertical DOP" }
+      ]
+    }
+  },
+
+  NMEA_GST: {
+    requires: null,
+    label: "Pseudorange Error Statistics",
+    description: "RMS and error ellipse statistics.",
+    nmea: {
+      tag: "GST",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100d4,
+        uart2: 0x209100d5,
+        usb: 0x209100d6
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "rms", type: "float", unit: "m", note: "RMS pseudorange error" },
+        { name: "sigma_maj", type: "float", unit: "m", note: "Semi-major std dev" },
+        { name: "sigma_min", type: "float", unit: "m", note: "Semi-minor std dev" },
+        { name: "orient_deg", type: "float", unit: "deg", note: "Error ellipse orientation" },
+        { name: "sigma_lat", type: "float", unit: "m", note: "Latitude std dev" },
+        { name: "sigma_lon", type: "float", unit: "m", note: "Longitude std dev" },
+        { name: "sigma_alt", type: "float", unit: "m", note: "Altitude std dev" }
+      ]
+    }
+  },
+
+  NMEA_GSV: {
+    requires: null,
+    label: "Satellites in View",
+    description: "Visible satellite summary and signal quality list.",
+    nmea: {
+      tag: "GSV",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100c5,
+        uart2: 0x209100c6,
+        usb: 0x209100c7
+      },
+      fields: [
+        { name: "num_msgs", type: "int", unit: "count", note: "Total GSV frames in sequence" },
+        { name: "msg_num", type: "int", unit: "count", note: "Current frame number" },
+        { name: "num_sats", type: "int", unit: "count", note: "Satellites in view" }
+      ]
+    }
+  },
+
+  NMEA_RLM: {
+    requires: null,
+    label: "Return Link Message",
+    description: "Navigation return-link service data.",
+    nmea: {
+      tag: "RLM",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x20910401,
+        uart2: 0x20910402,
+        usb: 0x20910403
+      },
+      fields: [
+        { name: "beacon_id", type: "str", unit: "", note: "Beacon/service identifier" },
+        { name: "msg_code", type: "str", unit: "", note: "Message code" },
+        { name: "status", type: "str", unit: "", note: "Service status" },
+        { name: "reserved", type: "str", unit: "", note: "Reserved payload" }
+      ]
+    }
+  },
+
+  NMEA_RMC: {
+    requires: null,
+    label: "Recommended Minimum",
+    description: "Minimum navigation dataset including speed and track.",
+    nmea: {
+      tag: "RMC",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100ac,
+        uart2: 0x209100ad,
+        usb: 0x209100ae
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "pos_status", type: "str", unit: "", note: "A=valid, V=invalid" },
+        { name: "lat_dm", type: "lat_dm", unit: "deg", note: "Latitude" },
+        { name: "lon_dm", type: "lon_dm", unit: "deg", note: "Longitude" },
+        { name: "sog_knots", type: "float", unit: "kn", note: "Speed over ground" },
+        { name: "cog_true", type: "float", unit: "deg", note: "Course over ground" }
+      ]
+    }
+  },
+
+  NMEA_THS: {
+    requires: null,
+    label: "True Heading and Status",
+    description: "True heading sentence with mode/status.",
+    nmea: {
+      tag: "THS",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100e3,
+        uart2: 0x209100e4,
+        usb: 0x209100e5
+      },
+      fields: [
+        { name: "heading_true_deg", type: "float", unit: "deg", note: "True heading" },
+        { name: "mode_ind", type: "str", unit: "", note: "Mode indicator" }
+      ]
+    }
+  },
+
+  NMEA_VTG: {
+    requires: null,
+    label: "Track and Ground Speed",
+    description: "Track angle and speed over ground.",
+    nmea: {
+      tag: "VTG",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100b1,
+        uart2: 0x209100b2,
+        usb: 0x209100b3
+      },
+      fields: [
+        { name: "track_true_deg", type: "float", unit: "deg", note: "Track true" },
+        { name: "track_mag_deg", type: "float", unit: "deg", note: "Track magnetic" },
+        { name: "sog_knots", type: "float", unit: "kn", note: "Speed over ground (knots)" },
+        { name: "sog_kmh", type: "float", unit: "km/h", note: "Speed over ground (km/h)" }
+      ]
+    }
+  },
+
+  NMEA_ZDA: {
+    requires: null,
+    label: "UTC Time and Date",
+    description: "UTC date/time sentence.",
+    nmea: {
+      tag: "ZDA",
+      default_rate_hz: 1,
+      cfg_keys: {
+        uart1: 0x209100d9,
+        uart2: 0x209100da,
+        usb: 0x209100db
+      },
+      fields: [
+        { name: "time_utc", type: "time_hms", unit: "UTC", note: "UTC time" },
+        { name: "day", type: "int", unit: "", note: "UTC day" },
+        { name: "month", type: "int", unit: "", note: "UTC month" },
+        { name: "year", type: "int", unit: "", note: "UTC year" }
+      ]
+    }
+  }
+}

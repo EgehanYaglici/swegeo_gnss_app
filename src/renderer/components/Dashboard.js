@@ -18,19 +18,26 @@ class Dashboard {
         const pos = new PositionCard(this.api);
         const sat = new SatelliteCard(this.api);
         const imu = new ImuCard(this.api);
+        const rf = new RfHealthCard(this.api);
         const dm = new SolutionStatusCard(this.api, this);
 
-        this.cards.push(pos, sat, imu, dm);
+        this.cards.push(pos, sat, imu, rf, dm);
         this._deviceMonitor = dm;
 
         // Register cards with display names
         this.cardRegistry['Position'] = pos;
         this.cardRegistry['Satellites'] = sat;
         this.cardRegistry['Attitude'] = imu;
+        this.cardRegistry['RF Health'] = rf;
 
         // Card element references for layout management
         this._imuCardEl  = document.getElementById('imu-card');
+        this._rfCardEl   = document.getElementById('rf-card');
         this._cardsGrid  = document.getElementById('cards-grid');
+
+        if (this._rfCardEl) {
+            this._rfCardEl.style.display = 'none';
+        }
     }
 
     /**
@@ -47,15 +54,25 @@ class Dashboard {
         // In both cases show full layout — only hide when SWEGEO device is positively identified as no-INS
         const known = caps !== null && caps !== undefined && caps.detected === true;
         const hasIns = known ? caps.ins === true : true;
+        const showRf = known && caps.family === 'ublox' && caps.rf_monitor === true && !hasIns;
 
-        // Attitude card: hidden only when a detected device has no INS
         if (this._imuCardEl) {
-            this._imuCardEl.style.display = hasIns ? '' : 'none';
+            this._imuCardEl.style.display = (hasIns && !showRf) ? '' : 'none';
         }
 
-        // Grid layout: 3-col with INS, 2-col without
+        if (this._rfCardEl) {
+            this._rfCardEl.style.display = showRf ? '' : 'none';
+        }
+
         if (this._cardsGrid) {
-            this._cardsGrid.classList.toggle('layout-no-ins', !hasIns);
+            this._cardsGrid.classList.toggle('layout-no-ins', !hasIns && !showRf);
+        }
+
+        // Forward caps to all registered cards so they can adapt source lists and commands
+        for (const card of Object.values(this.cardRegistry)) {
+            if (typeof card.applyCapabilities === 'function') {
+                card.applyCapabilities(caps);
+            }
         }
     }
 

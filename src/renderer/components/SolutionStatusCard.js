@@ -10,15 +10,18 @@ class SolutionStatusCard {
     this._connectedAt = null;
     this._uptimeTimer = null;
     this._logEntries = []; // cached for re-render
+    this._deviceCaps = null;
+    this._refreshing = false;
 
     // DOM refs
-    this.connDot = document.getElementById('dm-conn-dot');
-    this.connLabel = document.getElementById('dm-conn-label');
+    this.connDot    = document.getElementById('dm-conn-dot');
+    this.connLabel  = document.getElementById('dm-conn-label');
     this.connUptime = document.getElementById('dm-conn-uptime');
-    this.portCount = document.getElementById('dm-port-count');
-    this.portList = document.getElementById('dm-port-list');
-    this.logCount = document.getElementById('dm-log-count');
-    this.logList = document.getElementById('dm-log-list');
+    this.deviceInfo = document.getElementById('dm-device-info');
+    this.portCount  = document.getElementById('dm-port-count');
+    this.portList   = document.getElementById('dm-port-list');
+    this.logCount   = document.getElementById('dm-log-count');
+    this.logList    = document.getElementById('dm-log-list');
     this.refreshBtn = document.getElementById('dm-refresh');
 
     this.init();
@@ -31,6 +34,7 @@ class SolutionStatusCard {
     }
 
     // Connection status listener
+    this._refreshTimers = [];
     this.api.onConnection((connected) => {
       this._connected = connected;
       if (connected) {
@@ -38,16 +42,30 @@ class SolutionStatusCard {
         this._startUptime();
         this._updateConnUI();
 
-        // Auto-query with backoff to catch logs set by other cards
-        console.log('[DeviceMonitor] Connected. Starting refresh sequence...');
-        setTimeout(() => this._refresh(), 500);  // Slight delay for serial settle
-        setTimeout(() => this._refresh(), 2000); // Retry 1
-        setTimeout(() => this._refresh(), 5000); // Retry 2
+        // Auto-query once settled — onDeviceCapabilities triggers its own refresh
+        // so we only need one late-fire timer as a safety net for BYNAV devices.
+        console.log('[DeviceMonitor] Connected. Queuing post-detection refresh...');
+        this._refreshTimers.push(setTimeout(() => this._refresh(), 4000));  // Safety net
       } else {
+        // Önceki bağlantıdan bekleyen refresh timer'larını iptal et
+        this._refreshTimers.forEach(t => clearTimeout(t));
+        this._refreshTimers = [];
+        this._refreshing = false;
         this._connectedAt = null;
         this._stopUptime();
         this._clearAll();
         this._updateConnUI();
+      }
+    });
+
+    // Device capabilities — show model & feature flags in connection column.
+    // Also trigger an immediate refresh now that we know the device family.
+    this.api.onDeviceCapabilities((caps) => {
+      this._deviceCaps = caps;
+      this._updateDeviceInfo();
+      if (this._connected) {
+        // Small delay to let any in-flight refresh finish and logs settle
+        setTimeout(() => this._refresh(), 300);
       }
     });
 
@@ -110,6 +128,23 @@ class SolutionStatusCard {
 
   async _refresh() {
     if (!this._connected) return;
+    if (this._refreshing) return;  // Eş zamanlı refresh'i önle
+    this._refreshing = true;
+
+    // Device family not yet known (detection still in progress) — defer.
+    // onDeviceCapabilities will trigger a fresh _refresh() once detection completes.
+    if (this._deviceCaps === null) {
+      this._refreshing = false;
+      return;
+    }
+
+    // u-blox devices don't support ASCII queries (COMCONFIG / ICOMCONFIG / LOGLISTA).
+    // Use CFG-VALGET instead — handled by _renderUbloxStatus().
+    if (this._deviceCaps.family === 'ublox') {
+      this._refreshing = false;
+      this._renderUbloxStatus();
+      return;
+    }
 
     // Spin animation
     if (this.refreshBtn) {
@@ -119,20 +154,46 @@ class SolutionStatusCard {
 
     try {
       console.log('[DeviceMonitor] Requesting status...');
-      const comResult = await this.api.requestComconfig();
-      const icomResult = await this.api.requestIcomconfig();
-      const logResult = await this.api.requestLoglista();
+      const comResult  = await this.api.requestComconfig();
+      if (!this._connected) return;  // Await sırasında disconnect olduysa çık
 
-      console.log('[DeviceMonitor] Logs received:', logResult);
-      if (logResult && logResult.entries) {
-        console.log('[DeviceMonitor] Entry count:', logResult.entries.length);
-      }
+      const icomResult = await this.api.requestIcomconfig();
+      if (!this._connected) return;  // Await sırasında disconnect olduysa çık
+
+      const logResult  = await this.api.requestLoglista();
+      if (!this._connected) return;  // Await sırasında disconnect olduysa çık
+
+      console.log('[DeviceMonitor] COM:', (comResult.ports || []).length, 'ports |',
+                  'ICOM:', (icomResult.ports || []).length, 'ports |',
+                  'Logs:', (logResult.entries || []).length, 'entries');
 
       this._renderPorts(comResult.ports || [], icomResult.ports || []);
       this._logEntries = logResult.entries || [];
       this._renderLogs(this._logEntries);
     } catch (e) {
       console.error('[DeviceMonitor] Refresh error:', e);
+    } finally {
+      this._refreshing = false;
+    }
+  }
+
+  // Query u-blox port config and active MSGOUT keys via CFG-VALGET, then render.
+  async _renderUbloxStatus() {
+    // Show loading state while querying device
+    if (this.portCount) this.portCount.textContent = '…';
+    if (this.logCount)  this.logCount.textContent  = '…';
+    if (this.portList)  this.portList.innerHTML = '<div class="dm-empty-hint">Querying u-blox…</div>';
+    if (this.logList)   this.logList.innerHTML  = '<div class="dm-empty-hint">Querying u-blox…</div>';
+
+    try {
+      const result = await this.api.requestUbxStatus();
+      this._renderPorts(result.ports || [], []);
+      this._logEntries = result.activeMsgs || [];
+      this._renderLogs(this._logEntries);
+    } catch (e) {
+      console.error('[DeviceMonitor] u-blox status query error:', e);
+      if (this.portList) this.portList.innerHTML = '<div class="dm-empty-hint">Query failed</div>';
+      if (this.logList)  this.logList.innerHTML  = '<div class="dm-empty-hint">Query failed</div>';
     }
   }
 
@@ -257,9 +318,106 @@ class SolutionStatusCard {
     }
   }
 
+  // --- Device Info ---
+
+  _modelDisplayName(authMode) {
+    if (!authMode) return '—';
+    const m = authMode.toUpperCase();
+    if (m.includes('1D')) return 'SS100D INS';
+    if (m.includes('0D')) return 'SS100D / RTD100';
+    return authMode;
+  }
+
+  _updateDeviceInfo() {
+    if (!this.deviceInfo) return;
+    const caps = this._deviceCaps;
+
+    if (!caps || !caps.detected) {
+      this.deviceInfo.innerHTML = '';
+      return;
+    }
+
+    // ── u-blox family ──────────────────────────────────────────────────────
+    if (caps.family === 'ublox') {
+      const modelName = caps.model || 'u-blox';
+      const fwText    = caps.fwVersion   ? caps.fwVersion   : '';
+      const protText  = caps.protVersion ? `PROT ${caps.protVersion}` : '';
+      const subtitle  = [fwText, protText].filter(Boolean).join(' · ');
+
+      const insOk = caps.ins        === true;
+      const rfOk  = caps.rf_monitor === true;
+
+      // navSys may be space-separated ('GPS GLO GAL BDS QZSS')
+      const systems = caps.navSys ? caps.navSys.split(/[\s;,+]+/).filter(Boolean) : [];
+
+      const insHtml  = insOk ? `<span class="dm-cap-flag on">INS</span>` : '';
+      const rfHtml   = rfOk  ? `<span class="dm-cap-flag on">RF MON</span>` : '';
+      const flagsHtml = (insHtml || rfHtml)
+        ? `<div class="dm-cap-flags">${insHtml}${rfHtml}</div>` : '';
+
+      const sysHtml = systems.map(s => `<span class="dm-sys-chip">${s}</span>`).join('');
+      const navSection = sysHtml ? `
+        <div class="dm-info-section">
+          <span class="dm-info-label">Navigation Systems</span>
+          <div class="dm-sys-row">${sysHtml}</div>
+        </div>` : '';
+
+      this.deviceInfo.innerHTML = `
+        <div class="dm-model-name">${modelName}</div>
+        ${subtitle ? `<div class="dm-model-sub">${subtitle}</div>` : ''}
+        ${flagsHtml}
+        ${navSection}`;
+      return;
+    }
+
+    // ── BYNAV family (default) ─────────────────────────────────────────────
+    const modelName = this._modelDisplayName(caps.authMode);
+    const insOk     = caps.ins      === true;
+    const dualOk    = caps.dual_ant === true;
+
+    // Constellation chips: "GPS GLONASS GALILEO ..." → split by space
+    const systems = caps.navSys ? caps.navSys.split(' ').filter(Boolean) : [];
+
+    // Signal chips: "B1IB2IB1CB2AB2BL1L1CL2..." → non-greedy regex prevents greedy merging
+    // /[A-Z]\d[A-Z]*?(?=[A-Z]\d|$)/g  e.g. B1IB2I → [B1I, B2I], L1L1C → [L1, L1C]
+    const signals = caps.frqMask
+      ? (caps.frqMask.match(/[A-Z]\d[A-Z]*?(?=[A-Z]\d|$)/g) || [])
+      : [];
+
+    // INS sadece varsa göster, yoksa hiç yazma
+    const insHtml  = insOk ? `<span class="dm-cap-flag on">INS</span>` : '';
+    const dualHtml = `<span class="dm-cap-flag ${dualOk ? 'on' : 'off'}">DUAL ANT</span>`;
+
+    const sysHtml = systems.map(s => `<span class="dm-sys-chip">${s}</span>`).join('');
+    const sigHtml = signals.map(s => `<span class="dm-sig-chip">${s}</span>`).join('');
+
+    const flagsHtml = (insHtml || dualHtml)
+      ? `<div class="dm-cap-flags">${insHtml}${dualHtml}</div>` : '';
+
+    const navSection = sysHtml ? `
+      <div class="dm-info-section">
+        <span class="dm-info-label">Navigation Systems</span>
+        <div class="dm-sys-row">${sysHtml}</div>
+      </div>` : '';
+
+    const freqSection = sigHtml ? `
+      <div class="dm-info-section">
+        <span class="dm-info-label">Satellite Freq.</span>
+        <div class="dm-sig-row">${sigHtml}</div>
+      </div>` : '';
+
+    this.deviceInfo.innerHTML = `
+      <div class="dm-model-name">${modelName}</div>
+      ${flagsHtml}
+      ${navSection}
+      ${freqSection}`;
+  }
+
   // --- Clear ---
 
   _clearAll() {
+    console.warn('[DeviceMonitor] _clearAll() called — ports cleared!');
+    console.trace('[DeviceMonitor] _clearAll trace');
     this._logEntries = [];
     if (this.portCount) this.portCount.textContent = '0';
     if (this.logCount) this.logCount.textContent = '0';

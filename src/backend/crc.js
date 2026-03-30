@@ -1,4 +1,4 @@
-// CRC32 (BYNAV) + CRC-24Q (RTCM v3)
+// CRC32 (BYNAV) + CRC-24Q (RTCM v3) + Fletcher-8 (UBX)
 
 const CRC32_POLYNOMIAL = 0xEDB88320;
 
@@ -42,4 +42,16 @@ function crc24q(data) {
   return crc & 0xFFFFFF;
 }
 
-module.exports = { calcBlockCrc32, crc24q };
+// UBX Fletcher-8 checksum
+// data: Buffer — frame[2..] = class byte'tan payload son byte'a kadar
+// Preamble (B5 62) checksum'a dahil DEĞİL.
+function ubxChecksum(data) {
+  let ck_a = 0, ck_b = 0;
+  for (let i = 0; i < data.length; i++) {
+    ck_a = (ck_a + data[i]) & 0xFF;
+    ck_b = (ck_b + ck_a)    & 0xFF;
+  }
+  return { ck_a, ck_b };
+}
+
+module.exports = { calcBlockCrc32, crc24q, ubxChecksum };

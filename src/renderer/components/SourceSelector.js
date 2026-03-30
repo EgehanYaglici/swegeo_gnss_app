@@ -254,6 +254,7 @@ class SourceSelector {
     groupMessages(messages) {
         const groups = {
             'NMEA': [],
+            'UBX': [],
             'ASCII': [],
             'Binary': []
         };
@@ -264,7 +265,9 @@ class SourceSelector {
 
             if (name.startsWith('$') || typeLower === 'nmea') {
                 groups['NMEA'].push(msg);
-            } else if (typeLower === 'binary' || (typeof msg.id === 'number')) {
+            } else if (typeLower === 'ubx') {
+                groups['UBX'].push(msg);
+            } else if (typeLower === 'binary') {
                 groups['Binary'].push(msg);
             } else {
                 // Default to ASCII for everything else (e.g. specialized ASCII logs)

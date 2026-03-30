@@ -50,6 +50,7 @@ class BaseRoverSettings {
     // Device-reported state (from pull/responses only)
     this._deviceRole = '';
     this._deviceStationId = '';
+    this._deviceCaps = null;  // Set by app.js via applyCapabilities()
 
     // DOM refs
     this.portInput = document.getElementById('br-port');
@@ -150,6 +151,10 @@ class BaseRoverSettings {
       this._firstActivation = true;
       this._autoPull();
     }
+  }
+
+  applyCapabilities(caps) {
+    this._deviceCaps = caps;
   }
 
   async _autoPull() {
@@ -325,6 +330,11 @@ class BaseRoverSettings {
   // --- Device interaction ---
 
   async _pullAll() {
+    // u-blox devices do not support BYNAV ASCII queries — skip silently.
+    if (this._deviceCaps?.family === 'ublox') {
+      this._setStatus('u-blox mode — Base/Rover configuration not available via ASCII', 'warning');
+      return;
+    }
     this._setStatus('Pulling configuration...');
     this._portsInfo = {};
     this._loglistaPorts = {};

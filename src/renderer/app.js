@@ -78,6 +78,55 @@ document.addEventListener('DOMContentLoaded', () => {
     window.api.onDeviceCapabilities((caps) => {
       dashboard.applyCapabilities(caps);
       messagesSettings.applyCapabilities(caps);
+      baseRoverSettings.applyCapabilities(caps);
+      ethernetSettings.applyCapabilities(caps);
+
+      const isUblox = caps?.detected === true && caps?.family === 'ublox';
+      const knownNoIns = caps !== null && caps?.detected === true && caps?.ins === false;
+
+      const tabs = {
+        messages: document.querySelector('.settings-tab[data-settings-tab="messages"]'),
+        ethernet: document.querySelector('.settings-tab[data-settings-tab="ethernet"]'),
+        baseRover: document.querySelector('.settings-tab[data-settings-tab="base-rover"]'),
+        heading: document.querySelector('.settings-tab[data-settings-tab="heading"]'),
+        ins: document.querySelector('.settings-tab[data-settings-tab="ins"]')
+      };
+
+      const panels = {
+        messages: document.getElementById('settings-panel-messages'),
+        ethernet: document.getElementById('settings-panel-ethernet'),
+        baseRover: document.getElementById('settings-panel-base-rover'),
+        heading: document.getElementById('settings-panel-heading'),
+        ins: document.getElementById('settings-panel-ins')
+      };
+
+      // F9P phase-1 gating: only Messages + Ethernet tabs stay active for ublox devices.
+      if (isUblox) {
+        if (tabs.baseRover) tabs.baseRover.style.display = 'none';
+        if (tabs.heading) tabs.heading.style.display = 'none';
+        if (tabs.ins) tabs.ins.style.display = 'none';
+        if (panels.baseRover) panels.baseRover.style.display = 'none';
+        if (panels.heading) panels.heading.style.display = 'none';
+        if (panels.ins) panels.ins.style.display = 'none';
+      } else {
+        if (tabs.baseRover) tabs.baseRover.style.display = '';
+        if (tabs.heading) tabs.heading.style.display = '';
+        if (panels.baseRover) panels.baseRover.style.display = '';
+        if (panels.heading) panels.heading.style.display = '';
+
+        // Non-ublox flow: INS visibility still depends on capability
+        if (tabs.ins) tabs.ins.style.display = knownNoIns ? 'none' : '';
+        if (panels.ins) panels.ins.style.display = knownNoIns ? 'none' : '';
+      }
+
+      const hiddenActive =
+        (tabs.baseRover?.classList.contains('active') && tabs.baseRover?.style.display === 'none') ||
+        (tabs.heading?.classList.contains('active') && tabs.heading?.style.display === 'none') ||
+        (tabs.ins?.classList.contains('active') && tabs.ins?.style.display === 'none');
+      if (hiddenActive) {
+        tabs.messages?.click();
+      }
+      updateSettingsTabIndicator();
     });
 
     // Settings tab switching & Sliding Indicator

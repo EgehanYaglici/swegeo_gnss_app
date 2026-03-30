@@ -2,9 +2,10 @@
 const { EventEmitter } = require('events');
 const net = require('net');
 const dgram = require('dgram');
-const { calcBlockCrc32, crc24q } = require('./crc');
+const { calcBlockCrc32, crc24q, ubxChecksum } = require('./crc');
 
 const BYNAV_PREAMBLE = Buffer.from([0xAA, 0x44, 0x12]);
+const UBX_PREAMBLE   = Buffer.from([0xB5, 0x62]);
 
 // RTCM MSM ranges
 const MSM_RANGES = [[1071, 1077], [1081, 1087], [1091, 1097], [1111, 1117], [1121, 1127]];
@@ -68,8 +69,11 @@ class SerialManager extends EventEmitter {
             this.emit('line', `[SERIAL ERROR] ${err.message}`, 'red');
           });
           this.connection.on('close', () => {
-            this._running = false;
-            this.emit('connection', false);
+            // Yalnızca beklenmedik kapanmada emit et — manuel disconnect() zaten emit eder
+            if (this._running) {
+              this._running = false;
+              this.emit('connection', false);
+            }
           });
           this.emit('connection', true);
           resolve({ ok: true, msg: `Connected (Serial) ${this._desc}` });
@@ -105,8 +109,11 @@ class SerialManager extends EventEmitter {
           }
         });
         this.connection.on('close', () => {
-          this._running = false;
-          this.emit('connection', false);
+          // Yalnızca beklenmedik kapanmada emit et — manuel disconnect() zaten emit eder
+          if (this._running) {
+            this._running = false;
+            this.emit('connection', false);
+          }
         });
         this.connection.on('timeout', () => {
           if (!this._running) {
@@ -252,6 +259,51 @@ class SerialManager extends EventEmitter {
         continue;
       }
 
+      // 1c) UBX binary (B5 62) — u-blox protokolü
+      // Frame: [B5][62][class][id][lenLo][lenHi][payload...][ck_a][ck_b]
+      // Checksum (Fletcher-8): class byte'tan payload son byte'a kadar
+      // msgId = (class << 8) | id  →  BYNAV ID aralığıyla pratikte çakışmaz
+      if (buf.length >= 2 && buf[0] === 0xB5 && buf[1] === 0x62) {
+        if (buf.length < 6) return;                          // header henüz tam değil
+        const ubxClass      = buf[2];
+        const ubxId         = buf[3];
+        const ubxPayloadLen = buf.readUInt16LE(4);
+        const totalLen      = 6 + ubxPayloadLen + 2;        // header(6) + payload + checksum(2)
+        if (buf.length < totalLen) return;
+
+        const frame   = buf.slice(0, totalLen);
+        const chkData = frame.slice(2, 6 + ubxPayloadLen);  // class..payload (preamble hariç)
+        const { ck_a, ck_b } = ubxChecksum(chkData);
+        const crcOk   = ck_a === frame[totalLen - 2] && ck_b === frame[totalLen - 1];
+
+        if (!crcOk) {
+          // Sahte preamble veya bozuk frame — sonraki B5 62'yi bul
+          let skip = 1;
+          while (skip < buf.length - 1) {
+            if (buf[skip] === 0xB5 && buf[skip + 1] === 0x62) break;
+            skip++;
+          }
+          this._buffer = buf.slice(skip);
+          progressed = true;
+          continue;
+        }
+
+        const msgId   = (ubxClass << 8) | ubxId;
+        const payload = frame.slice(6, 6 + ubxPayloadLen);
+        // Keep terminal readable: don't dump UBX control/config chatter as hex.
+        // Binary telemetry still flows as hex; ASCII/NMEA remains plain text lines.
+        const isControlOrConfig = ubxClass === 0x05 || ubxClass === 0x06; // ACK / CFG
+        if (!isControlOrConfig) {
+          const hexStr = [...frame].map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+          this.emit('line', `[UBX] ${hexStr}`, '#888');
+        }
+        this.emit('binary', { ok: true, id: msgId, payload, raw: frame, protocol: 'ublox' });
+
+        this._buffer = buf.slice(totalLen);
+        progressed = true;
+        continue;
+      }
+
       // 2) RTCM v3 (0xD3)
       const rtcmIdx = buf.indexOf(0xD3);
       if (rtcmIdx === -1) {
@@ -323,7 +375,40 @@ class SerialManager extends EventEmitter {
     }
   }
 
-  // --- Send command ---
+  // --- Send commands ---
+
+  // UBX binary frame gönder (poll veya config için)
+  // cls: UBX class byte, id: UBX id byte, payload: Buffer (opsiyonel)
+  sendUbx(cls, id, payload = Buffer.alloc(0)) {
+    const totalLen = 6 + payload.length + 2;
+    const frame    = Buffer.alloc(totalLen);
+    frame[0] = 0xB5;
+    frame[1] = 0x62;
+    frame[2] = cls;
+    frame[3] = id;
+    frame.writeUInt16LE(payload.length, 4);
+    if (payload.length > 0) payload.copy(frame, 6);
+    const { ck_a, ck_b } = ubxChecksum(frame.slice(2, 6 + payload.length));
+    frame[6 + payload.length]     = ck_a;
+    frame[6 + payload.length + 1] = ck_b;
+    try {
+      if (this.mode === 'serial' && this.connection) {
+        this.connection.write(frame);
+        return { ok: true };
+      }
+      if (this.mode === 'tcp' && this.connection) {
+        this.connection.write(frame);
+        return { ok: true };
+      }
+      if (this.mode === 'udp' && this.connection && this.udpRemote) {
+        this.connection.send(frame, this.udpRemote.port, this.udpRemote.host);
+        return { ok: true };
+      }
+      return { ok: false, msg: 'Not connected' };
+    } catch (e) {
+      return { ok: false, msg: `[UBX SEND] ${e.message}` };
+    }
+  }
 
   sendCommand(cmd) {
     const data = Buffer.from(cmd + '\r\n', 'utf-8');

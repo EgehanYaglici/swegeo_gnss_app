@@ -424,6 +424,198 @@
       "name": "GPS Fix Data"
     }
   },
+  "GLL": {
+    "label": "Geographic Position - Latitude/Longitude",
+    "description": "Latitude and longitude with UTC and status",
+    "ascii": {
+      "tag": "GLL",
+      "log_command": "gpgll",
+      "description": "Geographic Position - Latitude/Longitude",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGLL",
+        "$GNGLL",
+        "GLL"
+      ],
+      "fields": [
+        {
+          "index": 1,
+          "name": "lat_dm",
+          "type": "lat_dm",
+          "unit": "deg",
+          "note": "Latitude ddmm.mmmm."
+        },
+        {
+          "index": 2,
+          "name": "ns",
+          "type": "hemi_ns",
+          "unit": "",
+          "note": "Latitude direction (N/S)."
+        },
+        {
+          "index": 3,
+          "name": "lon_dm",
+          "type": "lon_dm",
+          "unit": "deg",
+          "note": "Longitude dddmm.mmmm."
+        },
+        {
+          "index": 4,
+          "name": "ew",
+          "type": "hemi_ew",
+          "unit": "",
+          "note": "Longitude direction (E/W)."
+        },
+        {
+          "index": 5,
+          "name": "time_utc",
+          "type": "time_hms",
+          "unit": "UTC",
+          "note": "UTC time (hhmmss.ss)."
+        },
+        {
+          "index": 6,
+          "name": "pos_status",
+          "type": "str",
+          "unit": "",
+          "note": "A=valid, V=invalid."
+        },
+        {
+          "index": 7,
+          "name": "mode_ind",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA mode indicator."
+        },
+        {
+          "index": 8,
+          "name": "checksum",
+          "type": "str",
+          "unit": "",
+          "note": "NMEA checksum (hh)."
+        }
+      ],
+      "name": "Geographic Position - Latitude/Longitude"
+    }
+  },
+  "DTM": {
+    "label": "Datum Reference",
+    "description": "Map datum and local datum offsets",
+    "ascii": {
+      "tag": "DTM",
+      "log_command": "gpdtm",
+      "description": "Datum reference",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPDTM",
+        "$GNDTM",
+        "DTM"
+      ],
+      "fields": [
+        { "index": 1, "name": "datum_code", "type": "str", "unit": "", "note": "Local datum code." },
+        { "index": 2, "name": "sub_code", "type": "str", "unit": "", "note": "Datum subdivision code." },
+        { "index": 3, "name": "lat_off", "type": "float", "unit": "min", "note": "Latitude offset." },
+        { "index": 4, "name": "ns", "type": "hemi_ns", "unit": "", "note": "N/S indicator." },
+        { "index": 5, "name": "lon_off", "type": "float", "unit": "min", "note": "Longitude offset." },
+        { "index": 6, "name": "ew", "type": "hemi_ew", "unit": "", "note": "E/W indicator." },
+        { "index": 7, "name": "alt_off", "type": "float", "unit": "m", "note": "Altitude offset." },
+        { "index": 8, "name": "ref_datum", "type": "str", "unit": "", "note": "Reference datum code." },
+        { "index": 9, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "Datum Reference"
+    }
+  },
+  "GBS": {
+    "label": "GNSS Satellite Fault Detection",
+    "description": "Estimated position errors and RAIM fault data",
+    "ascii": {
+      "tag": "GBS",
+      "log_command": "gpgbs",
+      "description": "Satellite fault detection",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGBS",
+        "$GNGBS",
+        "GBS"
+      ],
+      "fields": [
+        { "index": 1, "name": "time_utc", "type": "time_hms", "unit": "UTC", "note": "UTC time." },
+        { "index": 2, "name": "err_lat_m", "type": "float", "unit": "m", "note": "Expected latitude error." },
+        { "index": 3, "name": "err_lon_m", "type": "float", "unit": "m", "note": "Expected longitude error." },
+        { "index": 4, "name": "err_alt_m", "type": "float", "unit": "m", "note": "Expected altitude error." },
+        { "index": 5, "name": "failed_svid", "type": "int", "unit": "", "note": "Failed SVID." },
+        { "index": 6, "name": "prob_failed", "type": "float", "unit": "", "note": "Failure probability." },
+        { "index": 7, "name": "bias_m", "type": "float", "unit": "m", "note": "Bias estimate." },
+        { "index": 8, "name": "stddev_m", "type": "float", "unit": "m", "note": "Bias standard deviation." },
+        { "index": 9, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "Satellite Fault Detection"
+    }
+  },
+  "GNS": {
+    "label": "GNSS Fix Data",
+    "description": "Combined GNSS fix summary",
+    "ascii": {
+      "tag": "GNS",
+      "log_command": "gpgns",
+      "description": "GNSS fix data",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGNS",
+        "$GNGNS",
+        "GNS"
+      ],
+      "fields": [
+        { "index": 1, "name": "time_utc", "type": "time_hms", "unit": "UTC", "note": "UTC time." },
+        { "index": 2, "name": "lat_dm", "type": "lat_dm", "unit": "deg", "note": "Latitude ddmm.mmmm." },
+        { "index": 3, "name": "ns", "type": "hemi_ns", "unit": "", "note": "N/S indicator." },
+        { "index": 4, "name": "lon_dm", "type": "lon_dm", "unit": "deg", "note": "Longitude dddmm.mmmm." },
+        { "index": 5, "name": "ew", "type": "hemi_ew", "unit": "", "note": "E/W indicator." },
+        { "index": 6, "name": "mode_ind", "type": "str", "unit": "", "note": "Mode indicator string." },
+        { "index": 7, "name": "num_sats", "type": "int", "unit": "count", "note": "Satellites used." },
+        { "index": 8, "name": "hdop", "type": "float", "unit": "", "note": "Horizontal DOP." },
+        { "index": 9, "name": "alt_m", "type": "float", "unit": "m", "note": "Orthometric altitude." },
+        { "index": 10, "name": "geo_sep_m", "type": "float", "unit": "m", "note": "Geoid separation." },
+        { "index": 11, "name": "diff_age_s", "type": "float", "unit": "s", "note": "Differential age." },
+        { "index": 12, "name": "diff_station_id", "type": "str", "unit": "", "note": "Differential station ID." },
+        { "index": 13, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "GNSS Fix Data"
+    }
+  },
+  "GRS": {
+    "label": "GNSS Range Residuals",
+    "description": "Residual errors for satellites in solution",
+    "ascii": {
+      "tag": "GRS",
+      "log_command": "gpgrs",
+      "description": "Range residuals",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPGRS",
+        "$GNGRS",
+        "GRS"
+      ],
+      "fields": [
+        { "index": 1, "name": "time_utc", "type": "time_hms", "unit": "UTC", "note": "UTC time." },
+        { "index": 2, "name": "mode", "type": "int", "unit": "", "note": "Residual mode." },
+        { "index": 3, "name": "res_1", "type": "float", "unit": "m", "note": "Residual for SV1." },
+        { "index": 4, "name": "res_2", "type": "float", "unit": "m", "note": "Residual for SV2." },
+        { "index": 5, "name": "res_3", "type": "float", "unit": "m", "note": "Residual for SV3." },
+        { "index": 6, "name": "res_4", "type": "float", "unit": "m", "note": "Residual for SV4." },
+        { "index": 7, "name": "res_5", "type": "float", "unit": "m", "note": "Residual for SV5." },
+        { "index": 8, "name": "res_6", "type": "float", "unit": "m", "note": "Residual for SV6." },
+        { "index": 9, "name": "res_7", "type": "float", "unit": "m", "note": "Residual for SV7." },
+        { "index": 10, "name": "res_8", "type": "float", "unit": "m", "note": "Residual for SV8." },
+        { "index": 11, "name": "res_9", "type": "float", "unit": "m", "note": "Residual for SV9." },
+        { "index": 12, "name": "res_10", "type": "float", "unit": "m", "note": "Residual for SV10." },
+        { "index": 13, "name": "res_11", "type": "float", "unit": "m", "note": "Residual for SV11." },
+        { "index": 14, "name": "res_12", "type": "float", "unit": "m", "note": "Residual for SV12." },
+        { "index": 15, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "Range Residuals"
+    }
+  },
   "GSA": {
     "label": "GPS DOP and Active Satellites",
     "description": "GNSS DOP and Active Satellites",
@@ -1620,6 +1812,50 @@
         "3 Positioning mode indicator: A=Autonomous; D=Differential; E=Estimated (DR); M=Manual; N=Invalid."
       ],
       "name": "Recommended Minimum"
+    }
+  },
+  "RLM": {
+    "label": "Return Link Message",
+    "description": "Navigation return-link service data",
+    "ascii": {
+      "tag": "RLM",
+      "log_command": "gprlm",
+      "description": "Return link message",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPRLM",
+        "$GNRLM",
+        "RLM"
+      ],
+      "fields": [
+        { "index": 1, "name": "beacon_id", "type": "str", "unit": "", "note": "Beacon/service identifier." },
+        { "index": 2, "name": "msg_code", "type": "str", "unit": "", "note": "Message code." },
+        { "index": 3, "name": "status", "type": "str", "unit": "", "note": "Service status." },
+        { "index": 4, "name": "reserved", "type": "str", "unit": "", "note": "Reserved payload." },
+        { "index": 5, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "Return Link Message"
+    }
+  },
+  "THS": {
+    "label": "True Heading and Status",
+    "description": "True heading sentence with mode/status",
+    "ascii": {
+      "tag": "THS",
+      "log_command": "gpths",
+      "description": "True heading and status",
+      "default_rate_hz": 1,
+      "aliases": [
+        "$GPTHS",
+        "$GNTHS",
+        "THS"
+      ],
+      "fields": [
+        { "index": 1, "name": "heading_true_deg", "type": "float", "unit": "deg", "note": "True heading." },
+        { "index": 2, "name": "mode_ind", "type": "str", "unit": "", "note": "Mode indicator." },
+        { "index": 3, "name": "checksum", "type": "str", "unit": "", "note": "NMEA checksum (hh)." }
+      ],
+      "name": "True Heading and Status"
     }
   },
   "TRA": {
