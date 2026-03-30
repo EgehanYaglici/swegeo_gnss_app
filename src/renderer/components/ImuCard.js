@@ -355,7 +355,7 @@ class ImuCard {
     this._lastUpdate = now;
 
     if (this.elNoAtt) {
-      this.elNoAtt.style.display = this._hasAttitude ? 'none' : '';
+      this.elNoAtt.style.display = this._hasAttitude ? 'none' : 'block';
     }
 
     const fmt = (v) => (v != null && !isNaN(v)) ? v.toFixed(2) + '°' : '--';
