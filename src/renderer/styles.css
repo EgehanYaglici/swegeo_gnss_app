@@ -237,12 +237,12 @@ body {
 
 /* ── CONNECTED STATE: Apple-style glossy emerald pill ── */
 .sidebar-connection-btn.connected {
-  background: linear-gradient(160deg, #22c55e 0%, #16a34a 60%, #15803d 100%);
+  background: linear-gradient(160deg, #114D88 0%, rgba(17, 77, 136, 0.92) 60%, rgba(17, 77, 136, 0.82) 100%);
   color: #ffffff;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.18) inset,
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
-    0 4px 16px rgba(22, 163, 74, 0.45),
+    0 4px 16px rgba(17, 77, 136, 0.38),
     0 1px 4px rgba(0, 0, 0, 0.12);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
@@ -269,7 +269,7 @@ body {
   inset: -3px;
   border-radius: 19px;
   background: transparent;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 190, 0, 0.35);
   animation: connGlowPulse 2.4s ease-in-out infinite;
   pointer-events: none;
 }
@@ -278,20 +278,20 @@ body {
 
   0%,
   100% {
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35), 0 0 12px rgba(34, 197, 94, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 190, 0, 0.35), 0 0 12px rgba(255, 190, 0, 0.2);
   }
 
   50% {
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15), 0 0 20px rgba(34, 197, 94, 0.12);
+    box-shadow: 0 0 0 4px rgba(255, 190, 0, 0.15), 0 0 20px rgba(255, 190, 0, 0.12);
   }
 }
 
 .sidebar-connection-btn.connected:hover {
-  background: linear-gradient(160deg, #4ade80 0%, #22c55e 55%, #16a34a 100%);
+  background: linear-gradient(160deg, rgba(17, 77, 136, 0.96) 0%, #114D88 55%, rgba(17, 77, 136, 0.88) 100%);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.22) inset,
     0 1px 0 rgba(255, 255, 255, 0.40) inset,
-    0 6px 20px rgba(22, 163, 74, 0.50),
+    0 6px 20px rgba(17, 77, 136, 0.44),
     0 1px 4px rgba(0, 0, 0, 0.10);
   color: #ffffff;
 }
@@ -598,8 +598,8 @@ body {
 }
 
 .update-check-btn.uptodate {
-  color: #34D399;
-  border-color: rgba(52, 211, 153, 0.25);
+  color: var(--brand-blue);
+  border-color: rgba(17, 77, 136, 0.25);
 }
 
 .update-check-btn.available {
@@ -614,9 +614,9 @@ body {
 }
 
 .update-check-btn.ready {
-  color: #34D399;
-  border-color: rgba(52, 211, 153, 0.3);
-  background: rgba(52, 211, 153, 0.08);
+  color: var(--brand-blue);
+  border-color: rgba(17, 77, 136, 0.3);
+  background: rgba(17, 77, 136, 0.08);
 }
 
 /* Label text crossfade */
@@ -739,12 +739,12 @@ body {
 }
 
 .update-btn-install {
-  background: rgba(52, 211, 153, 0.2);
-  color: #34D399;
+  background: rgba(17, 77, 136, 0.18);
+  color: var(--brand-blue);
 }
 
 .update-btn-install:hover {
-  background: rgba(52, 211, 153, 0.35);
+  background: rgba(17, 77, 136, 0.28);
 }
 
 #update-btn-install:not([style]) {
@@ -775,8 +775,8 @@ body {
 }
 
 .connection-btn.connected {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
+  background: rgba(17, 77, 136, 0.12);
+  color: var(--brand-blue);
 }
 
 .connection-btn:hover {
@@ -1437,51 +1437,7 @@ body {
   color: #888;
 }
 
-/* Buttons */
-.btn-primary {
-  padding: 8px 16px;
-  background: var(--accent);
-  color: #FFF;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-}
-
-.btn-secondary {
-  padding: 8px 16px;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-secondary:hover {
-  background: var(--border-secondary);
-}
-
-.btn-sm {
-  padding: 4px 10px;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.btn-sm:hover {
-  background: var(--border-secondary);
-}
+/* Global button styles are centralized in the canonical override block near the end of the file. */
 
 .toggle-label {
   display: flex;
@@ -2361,9 +2317,9 @@ body {
 
 .btn-success {
   padding: 5px 12px;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(17, 77, 136, 0.1);
   color: var(--success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(17, 77, 136, 0.3);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
@@ -3042,8 +2998,8 @@ body {
 }
 
 .status-toggle.active {
-  color: #10B981;
-  /* Green */
+  color: var(--brand-blue);
+  /* Active */
   transform: rotate(0deg);
 }
 
@@ -3350,8 +3306,8 @@ body {
 }
 
 .dm-conn-dot.connected {
-  background: #10B981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+  background: var(--brand-blue);
+  box-shadow: 0 0 6px rgba(17, 77, 136, 0.5);
 }
 
 .dm-conn-dot.disconnected {
@@ -3461,8 +3417,8 @@ body {
 }
 
 .dm-port-mode-tag.in {
-  color: #10B981;
-  background: rgba(16, 185, 129, 0.1);
+  color: #8a6500;
+  background: rgba(255, 190, 0, 0.16);
 }
 
 .dm-port-mode-tag.out {
@@ -4872,15 +4828,15 @@ body {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(17, 77, 136, 0.16);
+  border: 1px solid rgba(17, 77, 136, 0.38);
   border-radius: 20px;
 }
 
 .rtk-live-pulse {
   width: 6px;
   height: 6px;
-  background: #10B981;
+  background: #114D88;
   border-radius: 50%;
   animation: livePulse 2s ease-in-out infinite;
 }
@@ -4891,20 +4847,20 @@ body {
   100% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 0 0 rgba(17, 77, 136, 0.7);
   }
 
   50% {
     opacity: 0.7;
     transform: scale(1.2);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 4px rgba(17, 77, 136, 0);
   }
 }
 
 .rtk-live-text {
   font-size: 10px;
   font-weight: 700;
-  color: #10B981;
+  color: #114D88;
   letter-spacing: 0.5px;
 }
 
@@ -5632,8 +5588,8 @@ body {
 }
 
 .dm-cap-flag.on {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
+  background: rgba(17, 77, 136, 0.15);
+  color: #114D88;
 }
 
 .dm-cap-flag.off {
@@ -6020,13 +5976,13 @@ body {
 }
 
 .msg-col-icon-ascii {
-  background: linear-gradient(135deg, #10B981, #059669);
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #114D88, rgba(17, 77, 136, 0.78));
+  box-shadow: 0 2px 6px rgba(17, 77, 136, 0.3);
 }
 
 .msg-col-icon-binary {
-  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
-  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, #114D88, #9099A9);
+  box-shadow: 0 2px 6px rgba(17, 77, 136, 0.22);
 }
 
 .msg-column-title {
@@ -6243,7 +6199,7 @@ body {
 
 .msg-item.active-log .msg-item-active-dot {
   background: var(--success);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 2px rgba(17, 77, 136, 0.2);
 }
 
 /* Hidden Items (Filtering) */
@@ -6903,54 +6859,6 @@ body {
   }
 }
 
-/* ============================================================
-   TASK 3: CANONICAL SWEGEO CONTROL OVERRIDES
-   Additive cascade-only overrides for shared controls.
-   ============================================================ */
-.btn-primary,
-.btn-secondary,
-.btn-sm {
-  font-family: var(--font-ui, 'Roboto', sans-serif);
-  transition: box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
-}
-
-.btn-primary {
-  box-shadow: 0 2px 8px rgba(17, 77, 136, 0.18);
-}
-
-.btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(17, 77, 136, 0.24);
-}
-
-.btn-primary:focus,
-.btn-primary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(17, 77, 136, 0.18), 0 4px 12px rgba(17, 77, 136, 0.24);
-}
-
-.btn-secondary {
-  box-shadow: none;
-}
-
-.btn-secondary:hover {
-  box-shadow: none;
-}
-
-.btn-secondary:focus,
-.btn-secondary:focus-visible,
-.btn-sm:focus,
-.btn-sm:focus-visible {
-  outline: none;
-  border-color: rgba(17, 77, 136, 0.45);
-  box-shadow: 0 0 0 2px rgba(17, 77, 136, 0.14);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 8px;
-}
-
 .messages-search {
   border-radius: 8px;
   border-color: rgba(144, 153, 169, 0.45);
@@ -6965,8 +6873,23 @@ body {
 
 .messages-search:focus,
 .messages-search:focus-visible {
-  outline: none;
   background: #FFFFFF;
   border-color: var(--brand-blue);
   box-shadow: 0 0 0 2px rgba(17, 77, 136, 0.12);
+}
+
+:where(button, [role="button"], input, select, textarea, .nav-btn, .settings-tab):focus-visible {
+  outline: 2px solid rgba(255, 190, 0, 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(17, 77, 136, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
