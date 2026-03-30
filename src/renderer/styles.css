@@ -668,6 +668,10 @@ body {
   margin: 0;
 }
 
+#update-release-notes:not([style]) {
+  display: none;
+}
+
 /* Progress bar */
 .update-progress-bar {
   height: 3px;
@@ -685,16 +689,28 @@ body {
   width: 0%;
 }
 
+#update-progress-bar:not([style]) {
+  display: none;
+}
+
 /* Action buttons */
 .update-actions {
   display: flex;
   gap: 6px;
 }
 
+#update-actions:not([style]) {
+  display: none;
+}
+
 .hdg-stats-grid--spaced {
   border-top: 1px dashed #E5E7EB;
   padding-top: 6px;
   margin-top: 4px;
+}
+
+#hdg-stats-grid:not([style]) {
+  display: none;
 }
 
 .update-btn {
@@ -726,6 +742,10 @@ body {
 
 .update-btn-install:hover {
   background: rgba(52, 211, 153, 0.35);
+}
+
+#update-btn-install:not([style]) {
+  display: none;
 }
 
 /* Collapsed state */
@@ -821,6 +841,10 @@ body {
   overflow: hidden;
   min-height: 0;
   transition: box-shadow 0.2s ease;
+}
+
+#rf-card:not([style]) {
+  display: none;
 }
 
 .card:hover {
@@ -2788,6 +2812,10 @@ body {
   z-index: 2;
 }
 
+#att-no-att:not([style]) {
+  display: none;
+}
+
 .att-data-panel {
   padding: 6px 10px 8px;
   display: flex;
@@ -3911,6 +3939,10 @@ body {
   overflow: hidden;
 }
 
+#ntrip-sourcetable-section:not([style]) {
+  display: none;
+}
+
 .br-rtcm-scroll {
   flex: 1;
   min-height: 120px;
@@ -4622,6 +4654,10 @@ body {
   flex: 1;
 }
 
+#rtk-connected:not([style]) {
+  display: none;
+}
+
 /* === Quick Connect Profiles === */
 .rtk-profiles {
   display: flex;
@@ -5121,6 +5157,10 @@ body {
   animation: modalFadeIn 0.22s ease;
 }
 
+#connect-dialog:not([style]) {
+  display: none;
+}
+
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -5373,6 +5413,10 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: #9099A9;
+}
+
+#conn-identify-status:not([style]) {
+  display: none;
 }
 
 .settings-section-title-action {
@@ -6854,8 +6898,4 @@ body {
     opacity: 0;
     pointer-events: none;
   }
-}
-
-.is-hidden {
-  display: none;
 }

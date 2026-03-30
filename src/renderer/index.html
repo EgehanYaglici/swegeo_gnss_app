@@ -79,7 +79,7 @@
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           <line x1="2" y1="2" x2="22" y2="22" />
         </svg>
-        <svg class="conn-icon conn-icon-connected is-hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+        <svg class="conn-icon conn-icon-connected" width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
@@ -134,13 +134,13 @@
             <span class="update-check-label" id="update-check-label">Check for Updates</span>
           </button>
           <div class="update-expand" id="update-expand">
-            <div class="update-release-notes is-hidden" id="update-release-notes"></div>
-            <div class="update-progress-bar is-hidden" id="update-progress-bar">
+            <div class="update-release-notes" id="update-release-notes"></div>
+            <div class="update-progress-bar" id="update-progress-bar">
               <div class="update-progress-fill" id="update-progress-fill"></div>
             </div>
-            <div class="update-actions is-hidden" id="update-actions">
+            <div class="update-actions" id="update-actions">
               <button class="update-btn" id="update-btn-download">Download</button>
-              <button class="update-btn update-btn-install is-hidden" id="update-btn-install">Restart &
+              <button class="update-btn update-btn-install" id="update-btn-install">Restart &
                 Update</button>
             </div>
           </div>
@@ -216,7 +216,7 @@
                 </div>
 
                 <!-- Orientation Grid (Hidden unless active heading source) -->
-                <div id="hdg-stats-grid" class="pos-secondary-grid hdg-stats-grid--spaced is-hidden">
+                <div id="hdg-stats-grid" class="pos-secondary-grid hdg-stats-grid--spaced">
                   <div class="pos-grid-item">
                     <span class="pos-label">Heading</span>
                     <span class="pos-value-secondary" id="hdg-val">--</span>
@@ -311,7 +311,7 @@
             <div class="card-body att-card-body">
               <div class="att-pfd-container">
                 <canvas id="att-horizon"></canvas>
-                <div class="att-no-att-overlay is-hidden" id="att-no-att">NO ATTITUDE DATA</div>
+                <div class="att-no-att-overlay" id="att-no-att">NO ATTITUDE DATA</div>
               </div>
               <div class="att-data-panel">
                 <div class="att-primary-grid">
@@ -351,7 +351,7 @@
           </div>
 
           <!-- RF Health Card (u-blox) -->
-          <div class="card is-hidden" id="rf-card">
+          <div class="card" id="rf-card">
             <div class="card-header">
               <div class="card-title-group">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
@@ -522,7 +522,7 @@
               </div>
 
               <!-- Connected state -->
-              <div id="rtk-connected" class="rtk-state is-hidden">
+              <div id="rtk-connected" class="rtk-state">
                 <!-- Connection Header -->
                 <div class="rtk-conn-header">
                   <div class="rtk-conn-title">
@@ -1470,7 +1470,7 @@
             </div>
 
             <!-- Source Table (hidden until fetched) -->
-            <div class="settings-section is-hidden" id="ntrip-sourcetable-section">
+            <div class="settings-section" id="ntrip-sourcetable-section">
               <div class="settings-section-title">
                 Source Table
                 <span id="ntrip-source-count" class="ntrip-source-count"></span>
@@ -1582,7 +1582,7 @@
   </div>
 
   <!-- Connection Dialog (Modal) -->
-  <div id="connect-dialog" class="modal-overlay is-hidden">
+  <div id="connect-dialog" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
         <h2>Connect to Device</h2>
@@ -1661,7 +1661,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <span id="conn-identify-status" class="conn-identify-status is-hidden">
+        <span id="conn-identify-status" class="conn-identify-status">
           <svg class="conn-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
