@@ -79,8 +79,8 @@
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           <line x1="2" y1="2" x2="22" y2="22" />
         </svg>
-        <svg class="conn-icon conn-icon-connected" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" style="display:none">
+        <svg class="conn-icon conn-icon-connected is-hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
         </svg>
@@ -134,13 +134,13 @@
             <span class="update-check-label" id="update-check-label">Check for Updates</span>
           </button>
           <div class="update-expand" id="update-expand">
-            <div class="update-release-notes" id="update-release-notes" style="display:none"></div>
-            <div class="update-progress-bar" id="update-progress-bar" style="display:none">
+            <div class="update-release-notes is-hidden" id="update-release-notes"></div>
+            <div class="update-progress-bar is-hidden" id="update-progress-bar">
               <div class="update-progress-fill" id="update-progress-fill"></div>
             </div>
-            <div class="update-actions" id="update-actions" style="display:none">
+            <div class="update-actions is-hidden" id="update-actions">
               <button class="update-btn" id="update-btn-download">Download</button>
-              <button class="update-btn update-btn-install" id="update-btn-install" style="display:none">Restart &
+              <button class="update-btn update-btn-install is-hidden" id="update-btn-install">Restart &
                 Update</button>
             </div>
           </div>
@@ -216,8 +216,7 @@
                 </div>
 
                 <!-- Orientation Grid (Hidden unless active heading source) -->
-                <div id="hdg-stats-grid" class="pos-secondary-grid"
-                  style="display: none; border-top: 1px dashed #E5E7EB; padding-top: 6px; margin-top: 4px;">
+                <div id="hdg-stats-grid" class="pos-secondary-grid hdg-stats-grid--spaced is-hidden">
                   <div class="pos-grid-item">
                     <span class="pos-label">Heading</span>
                     <span class="pos-value-secondary" id="hdg-val">--</span>
@@ -312,7 +311,7 @@
             <div class="card-body att-card-body">
               <div class="att-pfd-container">
                 <canvas id="att-horizon"></canvas>
-                <div class="att-no-att-overlay" id="att-no-att" style="display:none">NO ATTITUDE DATA</div>
+                <div class="att-no-att-overlay is-hidden" id="att-no-att">NO ATTITUDE DATA</div>
               </div>
               <div class="att-data-panel">
                 <div class="att-primary-grid">
@@ -352,7 +351,7 @@
           </div>
 
           <!-- RF Health Card (u-blox) -->
-          <div class="card" id="rf-card" style="display:none">
+          <div class="card is-hidden" id="rf-card">
             <div class="card-header">
               <div class="card-title-group">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#114D88" stroke-width="2">
@@ -523,7 +522,7 @@
               </div>
 
               <!-- Connected state -->
-              <div id="rtk-connected" class="rtk-state" style="display:none">
+              <div id="rtk-connected" class="rtk-state is-hidden">
                 <!-- Connection Header -->
                 <div class="rtk-conn-header">
                   <div class="rtk-conn-title">
@@ -977,10 +976,9 @@
 
               <!-- Right Column: RTCM Messages (full height) -->
               <div class="settings-right-col collapsible-h" id="br-right-col">
-                <div class="settings-section" id="br-rtcm-section"
-                  style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+                <div class="settings-section br-rtcm-section--fill" id="br-rtcm-section">
                   <div class="settings-section-title">RTCM Output Messages</div>
-                  <div id="br-rtcm-list" class="br-rtcm-scroll" style="flex:1;overflow-y:auto"></div>
+                  <div id="br-rtcm-list" class="br-rtcm-scroll"></div>
                   <div class="br-rtcm-actions">
                     <button id="br-btn-disable-sel" class="btn-secondary btn-sm">Disable Selected</button>
                     <button id="br-btn-disable-all" class="btn-danger btn-sm">Disable ALL</button>
@@ -1036,7 +1034,7 @@
                     <div class="form-group"><label>Gateway</label><input type="text" id="eth-dev-gw"
                         class="form-control" placeholder="192.168.1.1"></div>
                   </div>
-                  <div class="eth-controls-grid" style="margin-top:8px">
+                  <div class="eth-controls-grid eth-controls-grid--spaced">
                     <div class="form-group"><label>Interface</label><select id="eth-iface" class="form-control">
                         <option>ETHA</option>
                       </select></div>
@@ -1082,8 +1080,7 @@
               <div class="settings-right-col">
                 <div class="settings-section">
                   <div class="settings-section-title">PC Network
-                    <button id="eth-btn-refresh-pc" class="btn-secondary btn-sm"
-                      style="float:right;margin-top:-4px">Refresh</button>
+                    <button id="eth-btn-refresh-pc" class="btn-secondary btn-sm settings-section-title-action">Refresh</button>
                   </div>
                   <div class="eth-adapter-row">
                     <select id="eth-adapter" class="form-control"></select>
@@ -1097,8 +1094,7 @@
 
                 <div class="settings-section">
                   <div class="settings-section-title">ARP Table
-                    <button id="eth-btn-refresh-arp" class="btn-secondary btn-sm"
-                      style="float:right;margin-top:-4px">Refresh</button>
+                    <button id="eth-btn-refresh-arp" class="btn-secondary btn-sm settings-section-title-action">Refresh</button>
                   </div>
                   <div class="eth-arp-scroll">
                     <table class="br-info-table">
@@ -1474,7 +1470,7 @@
             </div>
 
             <!-- Source Table (hidden until fetched) -->
-            <div class="settings-section" id="ntrip-sourcetable-section" style="display:none">
+            <div class="settings-section is-hidden" id="ntrip-sourcetable-section">
               <div class="settings-section-title">
                 Source Table
                 <span id="ntrip-source-count" class="ntrip-source-count"></span>
@@ -1586,7 +1582,7 @@
   </div>
 
   <!-- Connection Dialog (Modal) -->
-  <div id="connect-dialog" class="modal-overlay" style="display:none">
+  <div id="connect-dialog" class="modal-overlay is-hidden">
     <div class="modal">
       <div class="modal-header">
         <h2>Connect to Device</h2>
@@ -1655,19 +1651,17 @@
             <input type="number" id="udp-listen-port" class="form-control" value="3002" placeholder="Local port">
           </div>
           <div class="form-group">
-            <label>Remote Host <span
-                style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <label>Remote Host <span class="form-label-optional">(optional)</span></label>
             <input type="text" id="udp-remote-host" class="form-control" placeholder="IP for sending commands">
           </div>
           <div class="form-group">
-            <label>Remote Port <span
-                style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <label>Remote Port <span class="form-label-optional">(optional)</span></label>
             <input type="number" id="udp-remote-port" class="form-control" placeholder="Port for sending commands">
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <span id="conn-identify-status" class="conn-identify-status" style="display:none">
+        <span id="conn-identify-status" class="conn-identify-status is-hidden">
           <svg class="conn-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -1694,7 +1688,6 @@
   <script src="components/ConnectionDialog.js"></script>
   <script src="components/PositionCard.js"></script>
   <script src="components/SatelliteCard.js"></script>
-  <script src="components/VelocityCard.js"></script>
   <script src="components/ImuCard.js"></script>
   <script src="components/RfHealthCard.js"></script>
   <script src="components/SolutionStatusCard.js"></script>

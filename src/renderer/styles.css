@@ -691,6 +691,12 @@ body {
   gap: 6px;
 }
 
+.hdg-stats-grid--spaced {
+  border-top: 1px dashed #E5E7EB;
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
 .update-btn {
   flex: 1;
   padding: 5px 10px;
@@ -3901,6 +3907,10 @@ body {
   min-height: 0;
 }
 
+.br-rtcm-section--fill {
+  overflow: hidden;
+}
+
 .br-rtcm-scroll {
   flex: 1;
   min-height: 120px;
@@ -4214,6 +4224,10 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.eth-controls-grid--spaced {
+  margin-top: 8px;
 }
 
 .eth-icom-grid {
@@ -5359,6 +5373,17 @@ body {
   font-size: 12px;
   font-weight: 500;
   color: #9099A9;
+}
+
+.settings-section-title-action {
+  float: right;
+  margin-top: -4px;
+}
+
+.form-label-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
 }
 @keyframes connSpinnerRotate {
   to { transform: rotate(360deg); }
@@ -6829,4 +6854,8 @@ body {
     opacity: 0;
     pointer-events: none;
   }
+}
+
+.is-hidden {
+  display: none;
 }
