@@ -6,6 +6,8 @@ CLAUDE.md
 .agents/
 scripts/
 docs/
+AGENTS.md
+UG017_Interface Protocol_Bynav.pdf
 *.log
 .DS_Store
 Thumbs.db
