@@ -35,9 +35,9 @@ class Dashboard {
         this._rfCardEl   = document.getElementById('rf-card');
         this._cardsGrid  = document.getElementById('cards-grid');
 
-        if (this._rfCardEl) {
-            this._rfCardEl.style.display = 'none';
-        }
+    if (this._rfCardEl) {
+      this._rfCardEl.style.display = 'none';
+    }
     }
 
     /**
@@ -57,11 +57,11 @@ class Dashboard {
         const showRf = known && caps.family === 'ublox' && caps.rf_monitor === true && !hasIns;
 
         if (this._imuCardEl) {
-            this._imuCardEl.style.display = (hasIns && !showRf) ? '' : 'none';
+            this._imuCardEl.style.display = (hasIns && !showRf) ? 'flex' : 'none';
         }
 
         if (this._rfCardEl) {
-            this._rfCardEl.style.display = showRf ? '' : 'none';
+            this._rfCardEl.style.display = showRf ? 'flex' : 'none';
         }
 
         if (this._cardsGrid) {

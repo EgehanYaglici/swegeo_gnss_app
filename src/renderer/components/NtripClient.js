@@ -333,7 +333,7 @@ class NtripClientPage {
     this._addLogEntry(`Source table: ${result.sources.length} mountpoints`, 'info');
 
     // Show source table section
-    this._elSourceSection.style.display = '';
+    this._elSourceSection.style.display = 'block';
     this._elSourceCount.textContent = `(${result.sources.length})`;
 
     // Render table

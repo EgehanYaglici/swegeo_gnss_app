@@ -414,7 +414,7 @@ class ImuCard {
     if (this.elGx) this.elGx.textContent = dashes;
     if (this.elGy) this.elGy.textContent = dashes;
     if (this.elGz) this.elGz.textContent = dashes;
-    if (this.elNoAtt) this.elNoAtt.style.display = 'none';
+    if (this.elNoAtt) this.elNoAtt.style.display = 'block';
   }
 
   // --- Animation loop ---

@@ -147,11 +147,11 @@ class RtkCard {
 
     if (connected) {
       if (this._elDisconnected) this._elDisconnected.style.display = 'none';
-      if (this._elConnected) this._elConnected.style.display = '';
+      if (this._elConnected) this._elConnected.style.display = 'flex';
       if (this._elMount) this._elMount.textContent = data.mountpoint || '—';
       if (this._elHost) this._elHost.textContent = data.host || '—';
     } else {
-      if (this._elDisconnected) this._elDisconnected.style.display = '';
+      if (this._elDisconnected) this._elDisconnected.style.display = 'flex';
       if (this._elConnected) this._elConnected.style.display = 'none';
       if (this._elTypes) this._elTypes.innerHTML = '';
       if (this._elProgressFill) this._elProgressFill.style.width = '0%';

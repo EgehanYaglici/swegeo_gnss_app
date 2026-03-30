@@ -111,13 +111,13 @@ class UpdatePanel {
                 this.expand.classList.add('visible');
                 // Release notes göster
                 if (data.releaseNotes) {
-                    this.releaseNotes.style.display = '';
+                    this.releaseNotes.style.display = 'block';
                     this.releaseNotes.innerHTML = this._formatReleaseNotes(data.releaseNotes);
                 } else {
                     this.releaseNotes.style.display = 'none';
                 }
-                this.actions.style.display = '';
-                this.btnDownload.style.display = '';
+                this.actions.style.display = 'flex';
+                this.btnDownload.style.display = 'inline-block';
                 this.btnDownload.disabled = false;
                 this.btnDownload.textContent = 'Download';
                 this.btnInstall.style.display = 'none';
@@ -131,7 +131,7 @@ class UpdatePanel {
                 this.btn.className = 'update-check-btn downloading';
                 this.btn.disabled = true;
                 this.actions.style.display = 'none';
-                this.progressBar.style.display = '';
+                this.progressBar.style.display = 'block';
                 this.progressFill.style.width = `${pct}%`;
                 break;
             }
@@ -141,9 +141,9 @@ class UpdatePanel {
                 this._setLabel(`v${data.version} ready to install`, 'ready');
                 this.btn.disabled = true;
                 this.progressBar.style.display = 'none';
-                this.actions.style.display = '';
+                this.actions.style.display = 'flex';
                 this.btnDownload.style.display = 'none';
-                this.btnInstall.style.display = '';
+                this.btnInstall.style.display = 'inline-block';
                 this.btnInstall.disabled = false;
                 this.btnInstall.textContent = 'Restart & Update';
                 break;
