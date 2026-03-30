@@ -13,9 +13,12 @@ function readFile(filePath) {
   }
 }
 
-function countMatches(source, regex) {
-  const matches = source.match(regex);
-  return matches ? matches.length : 0;
+function stripCssComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+function parseTags(source) {
+  return source.match(/<[^>]+>/g) || [];
 }
 
 function requireCondition(condition, message, failures) {
@@ -32,7 +35,21 @@ requireCondition(
   failures
 );
 
-const inlineStyleCount = countMatches(html, /\sstyle\s*=/gi);
+const tags = parseTags(html);
+const extractedIds = new Set();
+let inlineStyleCount = 0;
+
+for (const tag of tags) {
+  const idMatch = tag.match(/\sid\s*=\s*(['"])(.*?)\1/i);
+  if (idMatch) {
+    extractedIds.add(idMatch[2]);
+  }
+
+  if (/\sstyle\s*=/i.test(tag)) {
+    inlineStyleCount += 1;
+  }
+}
+
 requireCondition(
   inlineStyleCount === 0,
   `index.html must not contain inline style attributes (${inlineStyleCount} found)`,
@@ -146,19 +163,21 @@ const criticalIds = [
   'ntrip-btn-fetch-mounts'
 ];
 
-const missingIds = criticalIds.filter((id) => !new RegExp(`id="${id}"`, 'i').test(html));
+const missingIds = criticalIds.filter((id) => !extractedIds.has(id));
 if (missingIds.length > 0) {
   failures.push(`Missing critical renderer IDs: ${missingIds.join(', ')}`);
 }
 
+const cssWithoutComments = stripCssComments(css);
+
 requireCondition(
-  /:focus-visible\b/.test(css),
+  /:focus-visible\b/.test(cssWithoutComments),
   'styles.css must include a :focus-visible rule',
   failures
 );
 
 requireCondition(
-  /@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/i.test(css),
+  /@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/i.test(cssWithoutComments),
   'styles.css must include an @media (prefers-reduced-motion: reduce) rule',
   failures
 );
