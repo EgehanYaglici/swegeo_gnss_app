@@ -17,6 +17,14 @@ function stripCssComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+function stripHtmlNoise(source) {
+  return source
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+    .replace(/<template\b[\s\S]*?<\/template>/gi, '');
+}
+
 function parseTags(source) {
   return source.match(/<[^>]+>/g) || [];
 }
@@ -28,6 +36,7 @@ function requireCondition(condition, message, failures) {
 const html = readFile(htmlPath);
 const css = readFile(cssPath);
 const failures = [];
+const sanitizedHtml = stripHtmlNoise(html);
 
 requireCondition(
   !html.includes('components/VelocityCard.js'),
@@ -35,7 +44,7 @@ requireCondition(
   failures
 );
 
-const tags = parseTags(html);
+const tags = parseTags(sanitizedHtml);
 const extractedIds = new Set();
 let inlineStyleCount = 0;
 
