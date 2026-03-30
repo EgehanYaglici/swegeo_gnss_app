@@ -11,6 +11,7 @@ docs/
 Thumbs.db
 .vscode/
 .idea/
+.worktrees/
 *.swp
 *.swo
 *~
